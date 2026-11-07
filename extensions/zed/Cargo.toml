@@ -1,0 +1,18 @@
+[package]
+name = "emu86-zed"
+version = "0.0.0"
+edition = "2021"
+license = "MIT"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+# Keep this in sync with the version Zed currently requires.
+[dependencies]
+zed_extension_api = "0.2"
+
+[profile.release]
+opt-level = "s"
+lto = true
+strip = true

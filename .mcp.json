@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "codegraph": {
+      "command": "codegraph-mcp",
+      "args": [],
+      "env": {
+        "CODEGRAPH_TELEMETRY": "off"
+      }
+    }
+  }
+}

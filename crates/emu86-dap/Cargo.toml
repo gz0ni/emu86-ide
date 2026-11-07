@@ -1,0 +1,16 @@
+[package]
+name = "emu86-dap"
+description = "Debug Adapter Protocol server for emu86"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "emu86-dap"
+path = "src/main.rs"
+
+[dependencies]
+emu86-core.workspace = true
+emu86-asm.workspace = true

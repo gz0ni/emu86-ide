@@ -1,0 +1,141 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "x86 Assembly (8086)",
+  "scopeName": "source.asm86",
+  "fileTypes": ["asm", "inc"],
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#preprocessor" },
+    { "include": "#directives" },
+    { "include": "#labels" },
+    { "include": "#strings" },
+    { "include": "#numbers" },
+    { "include": "#registers" },
+    { "include": "#instructions" },
+    { "include": "#sizes" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.semicolon.asm86",
+          "match": ";.*$"
+        }
+      ]
+    },
+    "preprocessor": {
+      "patterns": [
+        {
+          "name": "keyword.control.preprocessor.asm86",
+          "match": "^\\s*(#[A-Za-z_][\\w]*)"
+        }
+      ]
+    },
+    "directives": {
+      "patterns": [
+        {
+          "name": "keyword.control.directive.dot.asm86",
+          "match": "\\.[A-Za-z_][\\w]*"
+        },
+        {
+          "name": "keyword.control.directive.asm86",
+          "match": "(?i)\\b(segment|ends|assume|org|proc|endp|end|db|dw|dd|dq|dup|equ|ptr|offset|include|includelib|macro|endm|if|ifdef|ifndef|else|endif|while|endw|rept|endr|irp|irpc|struct|struc|record|union|even|align|public|extern|extrn|extend|label|local|near|far|short|type|lengthof|sizeof|this|flat|use16|use32)\\b"
+        }
+      ]
+    },
+    "labels": {
+      "patterns": [
+        {
+          "match": "^\\s*([A-Za-z_@?$][\\w@?$]*)(?=\\s*:)",
+          "captures": {
+            "1": { "name": "entity.name.label.asm86" }
+          }
+        },
+        {
+          "name": "punctuation.separator.label.asm86",
+          "match": ":"
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.single.asm86",
+          "match": "'(?:[^'\\n]|'')*'"
+        },
+        {
+          "name": "string.quoted.double.asm86",
+          "match": "\"(?:[^\"\\n]|\"\")*\""
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.hex.asm86",
+          "match": "\\b[0-9][0-9A-Fa-f]*[hH]\\b"
+        },
+        {
+          "name": "constant.numeric.binary.asm86",
+          "match": "\\b[01]+[bB]\\b"
+        },
+        {
+          "name": "constant.numeric.decimal.asm86",
+          "match": "\\b[0-9]+\\b"
+        }
+      ]
+    },
+    "registers": {
+      "patterns": [
+        {
+          "name": "variable.other.register.general.asm86",
+          "match": "(?i)\\b(ax|bx|cx|dx|al|ah|bl|bh|cl|ch|dl|dh|si|di|sp|bp)\\b"
+        },
+        {
+          "name": "variable.other.register.segment.asm86",
+          "match": "(?i)\\b(cs|ds|es|ss)\\b"
+        },
+        {
+          "name": "variable.other.register.special.asm86",
+          "match": "(?i)\\b(ip|fl|flags|sp)\\b"
+        }
+      ]
+    },
+    "instructions": {
+      "patterns": [
+        {
+          "name": "keyword.control.instruction.data.asm86",
+          "match": "(?i)\\b(mov|movsb|movsw|movzx|movsx|xchg|push|pop|pusha|popa|pushf|popf|lea|lds|les|xlat)\\b"
+        },
+        {
+          "name": "keyword.control.instruction.arithmetic.asm86",
+          "match": "(?i)\\b(add|adc|sub|sbb|inc|dec|neg|cmp|mul|imul|div|idiv|cbw|cwd|daa|das|aaa|aas|aam|aad)\\b"
+        },
+        {
+          "name": "keyword.control.instruction.logic.asm86",
+          "match": "(?i)\\b(and|or|xor|not|test|shl|shr|sal|sar|rol|ror|rcl|rcr)\\b"
+        },
+        {
+          "name": "keyword.control.instruction.control.asm86",
+          "match": "(?i)\\b(jmp|je|jne|jz|jnz|jg|jge|jl|jle|ja|jae|jb|jbe|jc|jnc|jo|jno|js|jns|jp|jpe|jnp|jpo|jcxz|loop|loope|loopne|call|ret|retf|iret|int|into)\\b"
+        },
+        {
+          "name": "keyword.control.instruction.string.asm86",
+          "match": "(?i)\\b(movs|cmps|scas|lods|stos|rep|repe|repne|repz|repnz)\\b"
+        },
+        {
+          "name": "keyword.control.instruction.system.asm86",
+          "match": "(?i)\\b(hlt|nop|wait|esc|lock|cli|sti|cld|std|clc|stc|cmc|lahf|sahf)\\b"
+        }
+      ]
+    },
+    "sizes": {
+      "patterns": [
+        {
+          "name": "storage.type.size.asm86",
+          "match": "(?i)\\b(byte|word|dword|qword|tbyte|real4|real8|real10)\\b"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,20 @@
+id = "emu86"
+name = "emu86"
+version = "0.0.0"
+schema_version = 1
+authors = ["gz0ni"]
+description = "Intel 8086 assembly support for Zed: MASM-compatible grammar and debugger"
+repository = "https://github.com/gz0ni/emu86-ide"
+
+# Grammar and debug adapter are declared here once they exist:
+#
+# [grammars.asm86]
+# repository = "https://github.com/gz0ni/tree-sitter-asm86"
+# rev = "<commit>"
+#
+# [debug_adapters.emu86]
+# ...
+#
+# Note: Zed extensions are WASM modules and cannot ship the `emu86-dap`
+# binary. Users install it separately; the extension only declares the
+# adapter and its configuration schema.

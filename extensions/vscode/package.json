@@ -1,0 +1,60 @@
+{
+  "name": "emu86",
+  "displayName": "emu86",
+  "description": "Intel 8086 assembly: MASM-compatible assembler, emulator and debugger",
+  "version": "0.0.0",
+  "publisher": "gz0ni",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gz0ni/emu86-ide"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Debuggers"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "asm86",
+        "aliases": [
+          "x86 Assembly (8086)",
+          "asm86"
+        ],
+        "extensions": [
+          ".asm",
+          ".inc"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "asm86",
+        "scopeName": "source.asm86",
+        "path": "./syntaxes/asm86.tmLanguage.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "emu86.about",
+        "title": "emu86: About"
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p .",
+    "watch": "tsc -w -p .",
+    "vscode:prepublish": "npm run compile"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.4.0"
+  }
+}

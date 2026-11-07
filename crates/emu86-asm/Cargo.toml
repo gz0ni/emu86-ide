@@ -1,0 +1,11 @@
+[package]
+name = "emu86-asm"
+description = "Assembler front-end: preprocessing, JWasm invocation and listing parsing"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[dependencies]
+emu86-core.workspace = true
