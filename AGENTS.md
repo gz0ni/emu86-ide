@@ -23,6 +23,17 @@ Read these only when the task touches their area:
 - [.agents/models.md](.agents/models.md): model catalog and routing.
 - [.agents/skills.md](.agents/skills.md): index of repo-scoped skills.
 
+## Current State
+
+Read this before planning any work; it is the shortest path to "what is left".
+
+- **Milestone:** M0 (bootstrap) done, M1 (8086 decoder) not started.
+- **Works:** workspace builds offline with zero dependencies; 14 unit tests pass; fmt, clippy and test are green; CI matrix configured for Windows, macOS and Linux.
+- **Does not work yet:** `Cpu::step` returns `StepError::Unimplemented`; no loaders, interrupts, video, keyboard; `emu86_asm::assemble` is a stub; `emu86-dap` and `emu86-ui` only print a version; the Zed extension has no grammar and no debug adapter.
+- **Blocked on input:** lab manuals — they decide `.com` versus MZ `.exe`, macros, and which virtual devices matter.
+- **Live checklist:** [.agents/todo.md](.agents/todo.md). **Detailed status:** [.agents/project.md](.agents/project.md).
+- **New machine:** [docs/SETUP.md](docs/SETUP.md).
+
 ## Highest Priority Rules
 
 - Read `.agents/*.md` before starting work; follow them.

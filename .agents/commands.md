@@ -8,7 +8,8 @@ All commands verified on Windows, PowerShell 7, Rust 1.97.1.
 cargo build --workspace
 ```
 
-No dependencies, so no install step. The Zed extension crate in
+No dependencies, so no install step. Fresh machine: see `docs/SETUP.md`.
+
 `extensions/zed` is excluded from the workspace on purpose (it needs the WASM
 target and `zed_extension_api`); do not add it to `members`.
 

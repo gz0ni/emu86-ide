@@ -17,6 +17,48 @@ Recorded decisions and the reasoning behind them, so future work does not silent
 
 <!-- New entries go here, newest first. -->
 
+### Rust as the implementation language (2026-11-07)
+
+- Decision: `emu86-core`, `emu86-asm`, `emu86-dap` and `emu86-ui` are Rust; TypeScript only for the VS Code extension.
+- Reason: one toolchain for three platforms, native binaries that editors can spawn, and a WASM build path for the Zed extension.
+- Alternatives considered: C++ (poor portability, no WASM for Zed), Go (no Zed extension path), C# (heavy distribution off Windows), TypeScript core (slow stepping, extra runtime for the window).
+- Consequences: `egui`/`eframe` will pull a large dependency tree at M2; `emu86-core` stays dependency-free. See `docs/adr/0004-rust-implementation.md`.
+
+### Project name and repository naming (2026-11-07)
+
+- Decision: the product is `emu86`, the repository is `gz0ni/emu86-ide`, the VS Code extension id is `gz0ni.emu86`.
+- Reason: `emu86` is free on crates.io, npm and the VS Code Marketplace; the `-ide` suffix avoids the crowded GitHub name space (`Emu86Dev/Emu86`, `mfld-fr/emu86`) and states what the project is.
+- Alternatives considered: `emu8086-*` (someone else's trademark), `asm86` (too generic), plain `emu86` on GitHub (collides with existing 8086 emulators, hurts discoverability).
+- Consequences: crate names `emu86-core` / `emu86-asm` / `emu86-dap` / `emu86-ui` are reserved by name only, not yet published.
+
+### Zed is the primary editor target (2026-11-07)
+
+- Decision: the Zed extension is milestone M5, the VS Code extension is M6.
+- Reason: the maintainer works in Zed day to day, so Zed is where the tool gets used and dogfooded; VS Code follows once the DAP surface is stable.
+- Alternatives considered: VS Code first (larger audience, easier packaging because the VSIX can bundle binaries), both in parallel (splits attention before the core works).
+- Consequences: the Zed install step for the native binaries must be solved early, since Zed cannot ship them inside the extension. See `docs/ROADMAP.md`.
+
+### Distribution differs per editor (2026-11-07)
+
+- Decision: the VS Code VSIX bundles `emu86-dap`, `emu86-ui` and JWasm per platform; the Zed extension ships no binaries and documents an install step.
+- Reason: VS Code extensions may spawn processes and package platform-specific VSIX builds; Zed extensions are WASM and cannot spawn or download anything.
+- Alternatives considered: a single global install for both editors (worse VS Code UX), a self-downloading installer started by the adapter (needs its own trust and signing story before M5).
+- Consequences: two packaging pipelines; the README must stay honest about the extra step on Zed; `tools/package-vscode.ps1` is still unwritten.
+
+### `AGENTS.md` lives in the repository root, not in `.agents/` (2026-11-07)
+
+- Decision: the agent entry point is `./AGENTS.md`; every other context file lives in `.agents/`.
+- Reason: `AGENTS.md` is auto-loaded from the repository root by OpenCode, Codex and Claude Code, and the links use repo-relative paths (`.agents/project.md`), which would break from inside `.agents/`.
+- Alternatives considered: `AGENTS.md` inside `.agents/` with adjusted links (duplicated content, easy to drift), both files (two sources of truth).
+- Consequences: this deviates from the `project-init` skill template on purpose; see `.agents/agent-config.md`.
+
+### Telemetry is disabled in this repository (2026-11-07)
+
+- Decision: all MCP configuration passes `CODEGRAPH_TELEMETRY=off`.
+- Reason: the code-graph server reports usage to PostHog by default; the project does not send third-party analytics from a developer machine or CI.
+- Alternatives considered: leaving the default on (no benefit for a single maintainer, adds a surprising outbound connection).
+- Consequences: verified by watching `~/.codegraph/telemetry-queue.jsonl` stay unchanged after a run. Any new MCP server must be checked for the same.
+
 ### CodeGraph MCP for code navigation (2026-11-07)
 
 - Decision: index the repository with `codegraph-ai/CodeGraph` and expose it over MCP to OpenCode and Claude Code.

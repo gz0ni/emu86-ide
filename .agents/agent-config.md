@@ -28,6 +28,11 @@
 | no vendored assembler | `.vscodeignore`/`tools` + review; JWasm resolved from `PATH` |
 | editor-agnostic core | crate dependency rules in `docs/ARCHITECTURE.md` |
 
+## Project Deviation From The `project-init` Template
+
+- The entry point `AGENTS.md` sits in the repository root, not in `.agents/`. Rationale: it is auto-loaded from the root by OpenCode, Codex and Claude Code, and all links are repo-relative (`.agents/project.md`). See `.agents/project-decisions.md`.
+- Everything else follows the template: journals and static references live in `.agents/`.
+
 ## Skill Authoring Rules
 
 - Lowercase hyphenated names.

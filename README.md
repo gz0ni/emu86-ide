@@ -45,7 +45,16 @@ cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --all -- --check
 ```
 
-No external dependencies yet, so the workspace builds offline.
+No external dependencies yet, so the workspace builds offline. Full
+instructions for a fresh machine, including the CodeGraph MCP setup, are in
+[`docs/SETUP.md`](docs/SETUP.md).
+
+## Status
+
+Pre-alpha. The workspace, documentation and CI exist; nothing executes
+instructions yet. Milestones and acceptance criteria are in
+[`docs/ROADMAP.md`](docs/ROADMAP.md), the live checklist is in
+[`.agents/todo.md`](.agents/todo.md).
 
 ## License
 

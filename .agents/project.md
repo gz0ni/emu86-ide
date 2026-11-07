@@ -44,6 +44,31 @@ Editors: Zed (primary target) and VS Code.
 
 ## Status
 
-M0 (bootstrap) done: workspace builds, 14 unit tests pass, CI configured. Instruction execution, assembler pipeline, DAP server and both editor extensions are stubs.
+Milestone: **M0 done, M1 not started.** See `docs/ROADMAP.md` for the milestone list and `.agents/todo.md` for the live checklist.
 
-Next: M1 — 8086 decoder, flags semantics, per-instruction unit tests.
+### Done and verified
+
+- Workspace of four crates builds offline with zero external dependencies.
+- 14 unit tests pass: register halves, flag bits, segment translation and 1 MiB wraparound, little-endian words, source-map lookup.
+- `cargo fmt --all -- --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace` all green on Windows.
+- CI matrix configured for Windows, macOS and Linux, plus a VS Code typecheck job.
+- Documentation: spec, architecture, roadmap, four ADRs.
+- Editor skeletons: VS Code grammar and manifest (valid, typechecks), Zed `extension.toml` and WASM crate skeleton (excluded from the workspace).
+- Agent context: `AGENTS.md` plus the full `.agents/` set.
+- CodeGraph MCP connected in OpenCode and Claude Code, telemetry off.
+
+### Not done
+
+- No instruction decoder: `Cpu::step` returns `StepError::Unimplemented`.
+- No loaders (`.com`, MZ `.exe`), no PSP, no interrupts, no video, no keyboard.
+- `emu86_asm::assemble` returns `AssembleError::NotImplemented`.
+- `emu86-dap` and `emu86-ui` are placeholders that print a version and exit.
+- Zed extension has no tree-sitter grammar and declares no debug adapter yet.
+- No golden traces captured from emu8086.
+
+### Open questions
+
+- `.com` only, or full `.model small` with an MZ loader.
+- Macros and conditional assembly in the lab corpus.
+- Which virtual devices (ports) the course actually uses.
+

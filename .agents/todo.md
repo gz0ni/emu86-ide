@@ -4,9 +4,9 @@ Task checklist. The agent maintains this file: creates items, marks them done, k
 
 ## Format
 
-- `[ ]` pending task — add due date or note if needed
+- `[ ]` pending task — add a due date or a note if needed
 - `[x]` done task — keep for history, do not delete immediately
-- `[~]` in progress — who/what is working on it
+- `[~]` in progress — who or what is working on it
 
 ## Rules
 
@@ -16,25 +16,33 @@ Task checklist. The agent maintains this file: creates items, marks them done, k
 
 ---
 
-## Open
+## Blocked On Input
+
+These cannot be started until the lab manuals are available.
 
 - [ ] Collect lab manuals and sample `.asm` files; close the TBD list in `docs/SPEC.md`.
-- [ ] Decide whether the manuals need macros and conditional assembly (affects assembler scope).
-- [ ] Decide `.com` only or full `.model small` with MZ `.exe` loader.
-- [ ] Verify emu8086 virtual devices actually used in the course.
-- [ ] Create the tree-sitter grammar repository for Zed (M5, primary editor
-      target — before the VS Code extension).
-- [ ] Add CodeGraph MCP config for Codex CLI (`~/.codex/config.toml`) — deferred
-      by the user.
-- [ ] Add `serde`/`serde_json` when the DAP server starts (keep `emu86-core` dependency-free).
+- [ ] Decide `.com` only or full `.model small` with an MZ `.exe` loader.
+- [ ] Decide whether macros and conditional assembly are needed (changes assembler scope by weeks).
+- [ ] Confirm which emu8086 virtual devices are actually used in the course.
+- [ ] Decide whether the assembler stays external forever or is replaced later (see `docs/adr/0002-jwasm-as-external-binary.md`).
+
+## Open — Implementation
+
+- [ ] M1 — 8086 decoder, flag semantics, per-instruction tests.
+- [ ] Create the tree-sitter grammar repository for Zed (M5 comes before M6).
 - [ ] Write `tools/capture-trace.ps1` for golden traces.
+- [ ] Write `tools/package-vscode.ps1` for per-platform VSIX packaging.
+- [ ] Add `serde`/`serde_json` when the DAP server starts (keep `emu86-core` dependency-free).
+- [ ] Add `egui`/`eframe` for `emu86-ui` at M2 (deliberately deferred).
+- [ ] Add CodeGraph MCP config for Codex CLI (`~/.codex/config.toml`) — deferred by the user.
 
 ## In Progress
 
-- [~] M1 — 8086 decoder, flags semantics, per-instruction tests.
+Nothing yet.
 
 ## Done
 
-- [x] CodeGraph MCP wired up for OpenCode and Claude Code; telemetry off; verified in OpenCode (2026-11-07).
+- [x] CodeGraph MCP wired up for OpenCode and Claude Code; telemetry off; verified in OpenCode — 42 tools (2026-11-07).
+- [x] Record all decisions: ADR 0004 plus six journal entries — naming, Zed-first, distribution, `AGENTS.md` placement, telemetry, CodeGraph (2026-11-07).
 - [x] M0 — workspace, four crates, docs, ADRs, CI, editor extension skeletons (2026-11-07).
 - [x] Scaffold `.agents/` context set (2026-11-07).
