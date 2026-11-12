@@ -15,6 +15,8 @@ param(
 
     [string]$Source,
 
+    [string]$InitialMemory,
+
     [string]$GoldenRoot = (Join-Path $PSScriptRoot '..\tests\golden'),
 
     [switch]$SkipChecksumCheck
@@ -107,14 +109,17 @@ function Read-Snapshots {
 }
 
 function Get-InitialChecksum {
-    param([byte[]]$ProgramBytes)
+    param([byte[]]$ProgramBytes, [byte[]]$MemoryBytes)
 
     if ($ProgramBytes.Length -gt 0xFF00) {
         throw "program is $($ProgramBytes.Length) bytes, but the M1 checksum window holds at most 65280"
     }
 
-    $memory = New-Object byte[] 65536
-    [Array]::Copy($ProgramBytes, 0, $memory, 0x0100, $ProgramBytes.Length)
+    $memory = $MemoryBytes
+    if ($null -eq $memory) {
+        $memory = New-Object byte[] 65536
+        [Array]::Copy($ProgramBytes, 0, $memory, 0x0100, $ProgramBytes.Length)
+    }
 
     [uint32]$hash = 2166136261
     for ($offset = 0x0100; $offset -lt 0x10000; $offset++) {
@@ -137,6 +142,9 @@ if (-not (Test-Path -LiteralPath $Final -PathType Leaf)) {
 if ($Source -and -not (Test-Path -LiteralPath $Source -PathType Leaf)) {
     throw "source not found: $Source"
 }
+if ($InitialMemory -and -not (Test-Path -LiteralPath $InitialMemory -PathType Leaf)) {
+    throw "initial memory not found: $InitialMemory"
+}
 
 $programExtension = [IO.Path]::GetExtension($Program).ToLowerInvariant()
 if ($programExtension -notin @('.com', '.bin')) {
@@ -152,11 +160,30 @@ $programBytes = [IO.File]::ReadAllBytes((Resolve-Path -LiteralPath $Program))
 if ($programBytes.Length -gt 0xFF00) {
     throw "program is $($programBytes.Length) bytes, but the M1 checksum window holds at most 65280"
 }
+$initialMemoryBytes = $null
+if ($InitialMemory) {
+    $initialMemoryBytes = [IO.File]::ReadAllBytes((Resolve-Path -LiteralPath $InitialMemory))
+    if ($initialMemoryBytes.Length -ne 65536) {
+        throw 'initial memory must contain exactly 65536 bytes'
+    }
+    if ($programBytes.Length -eq 0) {
+        throw 'program image is empty'
+    }
+    $start = (([uint32]$traceSnapshots[0]['cs'] * 16 + [uint32]$traceSnapshots[0]['ip']) -band 1048575)
+    if ($start -lt 0x0100 -or $start + $programBytes.Length -gt 0x10000) {
+        throw 'program image must lie within the checksum window'
+    }
+    for ($index = 0; $index -lt $programBytes.Length; $index++) {
+        if ($initialMemoryBytes[$start + $index] -ne $programBytes[$index]) {
+            throw 'program image does not match initial memory at CS:IP'
+        }
+    }
+}
 if (-not $SkipChecksumCheck) {
-    $expected = Get-InitialChecksum -ProgramBytes $programBytes
+    $expected = Get-InitialChecksum -ProgramBytes $programBytes -MemoryBytes $initialMemoryBytes
     $actual = [uint32]$traceSnapshots[0]['mem_checksum']
     if ($expected -ne $actual) {
-        throw ('Initial mem_checksum is 0x{0:X8}, expected 0x{1:X8}. The M1 harness requires zero-filled memory and the program at physical 0x0100.' -f $actual, $expected)
+        throw ('Initial mem_checksum is 0x{0:X8}, expected 0x{1:X8} from initial memory.' -f $actual, $expected)
     }
 }
 
@@ -168,6 +195,9 @@ New-Item -ItemType Directory -Path $destination | Out-Null
 
 $programName = if ($programExtension -eq '.bin') { 'program.bin' } else { 'program.com' }
 [IO.File]::WriteAllBytes((Join-Path $destination $programName), $programBytes)
+if ($InitialMemory) {
+    [IO.File]::WriteAllBytes((Join-Path $destination 'initial-memory.bin'), $initialMemoryBytes)
+}
 $traceSnapshots | ForEach-Object { ConvertTo-Json -InputObject $_ -Depth 3 -Compress } | Set-Content -LiteralPath (Join-Path $destination 'trace.jsonl') -Encoding utf8NoBOM
 ConvertTo-Json -InputObject $finalSnapshots[0] -Depth 3 -Compress | Set-Content -LiteralPath (Join-Path $destination 'final.json') -Encoding utf8NoBOM
 if ($Source) {

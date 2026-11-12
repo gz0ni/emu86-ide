@@ -17,6 +17,13 @@ Recorded decisions and the reasoning behind them, so future work does not silent
 
 <!-- New entries go here, newest first. -->
 
+### Preserve real reference memory and flags (2026-11-12)
+
+- Decision: allow an optional 65536-byte `initial-memory.bin`, validate the exact program at the first physical CS:IP within the existing checksum window, and initialize replay flags from the raw recorded word without normalization.
+- Reason: emu8086 4.08 rejects physical `0x0100`, initializes low memory and starts with `0202h` flags. Reference data must remain unchanged.
+- Alternatives considered: relocate snapshots, replace memory hashes with emulator output, normalize reference flags or include a complete proprietary state file (all rejected because they lose reference fidelity or copy excluded content).
+- Consequences: no core-library changes or dependencies; only low 64 KiB is initialized, with the remainder zero. The first real trace covers 3 instructions and ends before HLT; full M1 acceptance remains open for deferred instructions and the observed HLT question. This extends the earlier synthetic replay convention below.
+
 ### M1 golden replay remains test infrastructure (2026-11-12)
 
 - Decision: replay flat images at physical `0x0100` with zero-filled memory, initialize registers and flags from the first pre-instruction snapshot, execute one instruction per row and compare one separate final state. Check memory with FNV-1a over physical `[0x0100, 0x10000)`.

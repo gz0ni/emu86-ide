@@ -71,6 +71,5 @@ cargo test -p emu86-core --test golden -- --nocapture
 pwsh -NoProfile -File tools/tests/capture-trace.tests.ps1
 ```
 
-The PowerShell checks require PowerShell 7 and Cargo, with no Pester dependency. They import a temporary synthetic capture and replay it through Rust. No real reference trace is committed yet. See `tests/golden/README.md` for manual recording and import instructions. `EMU86_GOLDEN_ROOT` overrides the trace directory for Rust replay; an explicit empty root fails.
-- `tests/golden/` will hold traces captured from a real emu8086 install;
-  format documented in `tests/golden/README.md`, not populated yet.
+The PowerShell checks require PowerShell 7 and Cargo, with no Pester dependency. They import temporary synthetic captures with and without memory dumps and replay them through Rust. The default Rust replay also checks the real `arithmetic-overflow` capture from emu8086 4.08. See `tests/golden/README.md` for manual recording and import instructions; `-InitialMemory` passes an exact 65536-byte low-memory dump to the importer. `EMU86_GOLDEN_ROOT` overrides the trace directory for Rust replay; an explicit empty root fails.
+- `tests/golden/arithmetic-overflow/` holds the first real capture, with 3 instructions and a running final state before HLT; format and provenance are documented alongside it.

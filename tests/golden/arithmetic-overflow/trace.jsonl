@@ -1,0 +1,3 @@
+{"ip":256,"cs":256,"regs":{"ax":0,"bx":0,"cx":0,"dx":0,"sp":65534,"bp":0,"si":0,"di":0,"ds":256,"es":256,"ss":256},"flags":514,"mem_checksum":2230659493,"halted":false}
+{"ip":259,"cs":256,"regs":{"ax":32767,"bx":0,"cx":0,"dx":0,"sp":65534,"bp":0,"si":0,"di":0,"ds":256,"es":256,"ss":256},"flags":514,"mem_checksum":2230659493,"halted":false}
+{"ip":262,"cs":256,"regs":{"ax":32768,"bx":0,"cx":0,"dx":0,"sp":65534,"bp":0,"si":0,"di":0,"ds":256,"es":256,"ss":256},"flags":2710,"mem_checksum":2230659493,"halted":false}

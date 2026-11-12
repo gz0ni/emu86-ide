@@ -29,7 +29,7 @@ Read this before planning any work; it is the shortest path to "what is left".
 
 - **Milestone:** M1 (8086 decoder) in progress — stages 1 (decoder skeleton and data movement), 2 (arithmetic, logic, flags, BCD), 3 (shifts, rotates, strings with REP) and 4 (control flow, interrupts, flag control) done.
 - **Works:** workspace builds offline with zero dependencies; 131 unit tests pass; `Cpu::step` decodes prefixes, ModR/M, data movement, arithmetic/logic, shift/rotate, string and control-flow groups, including `INT`/`IRET` and flag-control instructions; fmt, clippy and test are green; CI matrix configured for Windows, macOS and Linux.
-- **Golden traces:** replay infrastructure and the validated manual-capture importer work; 6 harness tests pass. No real emu8086 trace has been recorded yet, so M1 acceptance remains open.
+- **Golden traces:** the first real emu8086 4.08 capture replays 3 instructions with exact flags and memory checksums; 9 harness tests pass. Optional low-64-KiB initialization is supported. M1 remains open for deferred instructions and the HLT compatibility question.
 - **Does not work yet:** `IN`/`OUT`, `WAIT` and `ESC` still return `Unimplemented`; no loaders, BIOS/DOS interrupt handlers, video or keyboard; `emu86_asm::assemble` is a stub; `emu86-dap` and `emu86-ui` only print a version; the Zed extension has no grammar and no debug adapter.
 - **Blocked on input:** lab manuals — they decide `.com` versus MZ `.exe`, macros, and which virtual devices matter.
 - **Live checklist:** [.agents/todo.md](.agents/todo.md). **Detailed status:** [.agents/project.md](.agents/project.md).

@@ -17,6 +17,20 @@ Known bugs found in this project and how they were fixed, so they do not reappea
 
 <!-- New entries go here, newest first. -->
 
+### HLT reference IP and halt-state observability (2026-11-12) — open
+
+- Symptom: an exploratory HLT step in emu8086 4.08 reports a halted emulator but keeps IP at `0109h`; the complete saved state is identical to the preceding running state. The core advances IP after fetching HLT.
+- Root cause: reference halt handling and its debugger/export representation need separate investigation.
+- Fix: none yet. The first accepted golden capture is explicitly bounded before HLT, with 3 executed instructions and a running final state.
+- Prevent: capture halt behavior through both the debugger and a state export before choosing compatibility semantics; do not invent a halted export or mask IP differences.
+
+### Replay discarded reference initialization (2026-11-12) — fixed
+
+- Symptom: reference low memory and raw `0202h` flags could not replay under the fixed zero-memory and normalized-flags assumptions.
+- Root cause: the initial synthetic harness assumed physical `0x0100` loading and used `Flags::from_bits` for captured state.
+- Fix: optional validated low-64-KiB memory initialization and exact raw flags in the integration harness, plus matching importer support. Core power-on defaults are unchanged.
+- Prevent: relocated-memory, raw-flags, malformed-dump and importer-to-replay regression tests.
+
 ### Golden capture validation and checksum errors (2026-11-12) — fixed
 
 - Symptom: replay rejected whitespace before JSON colons but accepted duplicate fields and an extra halted trace row; the importer accepted invalid numeric types and failed calculating the initial checksum.

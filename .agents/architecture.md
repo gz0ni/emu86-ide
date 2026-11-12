@@ -38,10 +38,10 @@ Four independent artifacts, no single binary:
 
 ## Golden Replay Infrastructure
 
-- `crates/emu86-core/tests/golden.rs` loads flat images at physical `0x0100`, initializes registers from the first pre-instruction snapshot, steps once per trace row and checks final state. Its schema parser and file access stay outside the core library.
-- State comparison covers all registers, the full flags word, halt state and FNV-1a over physical `[0x0100, 0x10000)`. No screen or initial memory dump support yet.
-- `tools/capture-trace.ps1` validates and imports manually prepared reference snapshots with PowerShell 7. `tools/tests/capture-trace.tests.ps1` verifies rejected inputs and replays an imported synthetic capture using `EMU86_GOLDEN_ROOT`.
-- No real reference traces are committed; infrastructure tests do not close M1.
+- `crates/emu86-core/tests/golden.rs` loads flat images at physical `0x0100`, or initializes physical `[0, 0x10000)` from an optional exact 65536-byte `initial-memory.bin`. With a dump, the nonempty image must match memory at the first physical CS:IP and fit the checksum window. It initializes registers and raw flags from the first pre-instruction snapshot, steps once per trace row and checks final state. Its schema parser and file access stay outside the core library.
+- State comparison covers all registers, the full unnormalized flags word, halt state and FNV-1a over physical `[0x0100, 0x10000)`. No screen comparison or initialization above the low 64 KiB yet.
+- `tools/capture-trace.ps1` validates and imports manually prepared reference snapshots with PowerShell 7, optionally accepting `-InitialMemory`. `tools/tests/capture-trace.tests.ps1` verifies rejected inputs and replays imported synthetic captures with and without dumps using `EMU86_GOLDEN_ROOT`.
+- `tests/golden/arithmetic-overflow/` is the first real emu8086 4.08 capture: 3 instructions ending before HLT. Its provenance documents reference state extraction and actual memory checksums. Deferred instructions and HLT compatibility still keep M1 open.
 
 ## Feature Layer
 
@@ -59,7 +59,7 @@ Four independent artifacts, no single binary:
 - `emu86-asm::assemble` does nothing.
 - DAP server and companion window are placeholders.
 - `extensions/zed` has no tree-sitter grammar and is excluded from the workspace, so `cargo build --workspace` does not cover it.
-- No golden traces captured yet.
+- The first golden trace covers only register loading, signed overflow and a memory write. HLT keeps IP unchanged in the reference debugger/export and needs a separate compatibility investigation.
 
 ## Roadmap
 

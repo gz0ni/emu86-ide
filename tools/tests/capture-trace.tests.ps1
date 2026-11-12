@@ -24,6 +24,25 @@ function Assert-Rejected {
     }
 }
 
+function Assert-RejectedMemory {
+    param([string]$Label, [byte[]]$MemoryBytes, [string]$Snapshot = $memoryInitial)
+
+    $script:caseIndex++
+    [IO.File]::WriteAllBytes($memoryPath, $MemoryBytes)
+    Set-Content -LiteralPath $tracePath -Value $Snapshot -Encoding utf8
+    Set-Content -LiteralPath $finalPath -Value $memoryFinal -Encoding utf8
+    $name = 'invalid-memory-' + $script:caseIndex
+    try {
+        & $importer -Name $name -Program $programPath -Trace $tracePath -Final $finalPath -InitialMemory $memoryPath -GoldenRoot $outputRoot -SkipChecksumCheck
+        $failures.Add("accepted $Label")
+    }
+    catch {
+        if (Test-Path -LiteralPath (Join-Path $outputRoot $name)) {
+            $failures.Add("created destination for $Label")
+        }
+    }
+}
+
 try {
     $programPath = Join-Path $testRoot 'input.com'
     $tracePath = Join-Path $testRoot 'trace.jsonl'
@@ -74,6 +93,34 @@ try {
         $failures.Add('overwrote an existing capture')
     }
     catch {}
+
+    $memoryPath = Join-Path $testRoot 'memory.bin'
+    $memory = [byte[]]::new(65536)
+    $memory[0x0200] = 0x34
+    $memory[0x0201] = 0x12
+    $memoryProgram = [byte[]]@(0xA1, 0x00, 0x02, 0x90)
+    [Array]::Copy($memoryProgram, 0, $memory, 0x1100, $memoryProgram.Length)
+    [IO.File]::WriteAllBytes($programPath, $memoryProgram)
+    $memoryInitial = $valid.Replace('"cs":0', '"cs":256').Replace('"flags":61442', '"flags":514').Replace('341274553', '3977269960')
+    $memoryFinal = $memoryInitial.Replace('"ip":256', '"ip":259').Replace('"ax":0', '"ax":4660')
+    foreach ($size in @(0, 65535, 65537)) {
+        Assert-RejectedMemory "memory dump size $size" ([byte[]]::new($size))
+    }
+    Assert-RejectedMemory 'mismatched program in memory' ([byte[]]::new(65536))
+    Assert-RejectedMemory 'entry below checksum window' $memory ($memoryInitial.Replace('"cs":256', '"cs":0').Replace('"ip":256', '"ip":255'))
+    Assert-RejectedMemory 'entry above checksum window' $memory ($memoryInitial.Replace('"cs":256', '"cs":4096').Replace('"ip":256', '"ip":0'))
+    Assert-RejectedMemory 'program crosses checksum window end' $memory ($memoryInitial.Replace('"cs":256', '"cs":0').Replace('"ip":256', '"ip":65534'))
+    [IO.File]::WriteAllBytes($programPath, [byte[]]::new(0))
+    Assert-RejectedMemory 'empty program with memory dump' $memory
+    [IO.File]::WriteAllBytes($programPath, $memoryProgram)
+    [IO.File]::WriteAllBytes($memoryPath, $memory)
+    Set-Content -LiteralPath $tracePath -Value $memoryInitial -Encoding utf8
+    Set-Content -LiteralPath $finalPath -Value $memoryFinal -Encoding utf8
+    & $importer -Name 'valid-memory' -Program $programPath -Trace $tracePath -Final $finalPath -InitialMemory $memoryPath -GoldenRoot $outputRoot
+    $installedMemory = [IO.File]::ReadAllBytes((Join-Path $outputRoot 'valid-memory/initial-memory.bin'))
+    if ([Convert]::ToHexString($installedMemory) -cne [Convert]::ToHexString($memory)) {
+        $failures.Add('initial memory was not preserved')
+    }
 
     $previousRoot = $env:EMU86_GOLDEN_ROOT
     try {

@@ -16,6 +16,25 @@ Traps and pitfalls the agent has stepped on in this project. Log a gotcha immedi
 
 <!-- New entries go here, newest first. -->
 
+### Real reference initialization exposed replay assumptions (2026-11-12)
+
+- What happened: new replay tests failed because raw `0202` flags became `F202`, relocated dump memory was ignored and invalid dump sizes were accepted.
+- Root cause: replay always normalized flags and assumed a zero-filled image at physical `0x0100`.
+- Avoid: preserve recorded flags and validate optional low-memory initialization before replay; keep synthetic fallback behavior covered separately.
+- Importer regression initially failed because `-InitialMemory` was not supported; validate and copy the optional dump in the importer as well as Rust replay.
+
+### emu8086 rejects the harness load address (2026-11-12)
+
+- What happened: emu8086 4.08 refused physical `0x0100` and reported its free-memory range as `0050:0000` through `A000:0000`.
+- Root cause: the harness's fixed image address overlaps the reference emulator's reserved low memory.
+- Avoid: preserve real reference initialization and extend replay initialization rather than relocating recorded states or fabricating checksums.
+
+### emu8086 UI geometry requires a fresh screenshot (2026-11-12)
+
+- What happened: a menu click after a text-only observation failed with `coordinate input geometry is unavailable`.
+- Root cause: the legacy window did not expose usable geometry in that observation.
+- Avoid: refresh window selection, activate the target and capture a screenshot before coordinate input.
+
 ### Python defaults produced non-UTF-8 punctuation (2026-11-12)
 
 - What happened: review found replacement glyphs for two em dashes in `tools/README.md`.

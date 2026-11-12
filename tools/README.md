@@ -8,6 +8,8 @@ Development helpers. None of this ships to users.
 
 See `tests/golden/README.md` for the snapshot schema, memory checksum, capture procedure and import command. Existing capture directories are never overwritten.
 
+`-InitialMemory` accepts a raw 65536-byte physical memory dump. The importer checks that it contains the exact image at the first snapshot's physical `CS:IP` within the checksum window. Replay preserves the raw reference flags word and memory bytes.
+
 Run importer and Rust replay integration checks with:
 
 ```powershell

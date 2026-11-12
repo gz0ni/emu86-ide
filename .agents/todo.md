@@ -32,6 +32,7 @@ Labs 5 and 6 have been reviewed; further manuals and examples are still needed.
 - [ ] Assemble and run both lab 5 sample forms as COM programs; verify stepping, register and memory state and the reported `RHIGHT=0096h`, `RLOW=3000h` result.
 - [ ] Check assembler diagnostics and source locations for the lab 5 malformed examples: missing separator, operand size mismatch, undefined symbol and invalid mnemonic.
 - [ ] Add lab 6 acceptance cases for signed and unsigned byte and word arithmetic, overflow and division, including program-generated `00h`/`FFh` error codes in memory.
+- [ ] Investigate HLT compatibility: emu8086 4.08 leaves IP at the HLT address and exports no distinguishable halt state; the core currently advances IP. The first bounded reference capture stops before HLT.
 - [ ] Create the tree-sitter grammar repository for Zed (M5 comes before M6).
 - [x] Finish `tools/capture-trace.ps1` as a validated importer for manually recorded golden traces (2026-11-12).
 - [ ] Write `tools/package-vscode.ps1` for per-platform VSIX packaging.
@@ -47,7 +48,7 @@ Labs 5 and 6 have been reviewed; further manuals and examples are still needed.
   - [x] M1.3 — shifts, rotates, string operations with REP/REPNE and DF (2026-11-07).
   - [x] M1.4 — control flow, INT/INT3/INTO/IRET, HLT and flag-control instructions (2026-11-07).
   - [x] M1.5a — golden-trace replay harness, validated capture importer and synthetic integration tests (2026-11-12).
-  - [ ] M1.5b — capture and replay the first real emu8086 trace; M1 acceptance remains open.
+  - [x] M1.5b — captured and replayed the first real emu8086 4.08 trace: 3 instructions with raw flags and low-memory initialization; M1 acceptance remains open for deferred instructions and HLT compatibility (2026-11-12).
 
 ## Done
 

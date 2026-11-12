@@ -33,6 +33,7 @@
 - `cargo test --workspace`. Unit tests live in `#[cfg(test)] mod tests` next to the code.
 - Every new instruction needs at least one test: normal case, flag results, and one edge case (carry out, sign, overflow or wraparound).
 - Behavioural compatibility is tested against golden traces from `tests/golden/`; no test may depend on wall-clock time.
+- Reference captures retain raw flags and checksums from actual reference memory. Optional initialization dumps contain physical `[0, 0x10000)` only; never commit emulator binaries, firmware code, bundled examples or complete proprietary state exports.
 
 ## Generated and External Files
 

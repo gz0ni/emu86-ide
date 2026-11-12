@@ -226,6 +226,83 @@ fn replay_detects_memory_and_flag_divergence_at_the_correct_step() {
     assert!(error.contains("final state: flags"), "{error}");
 }
 
+#[test]
+fn replay_preserves_raw_reference_flags() {
+    let initial = snapshot_json(0x0100, 0, Registers::default(), 0x0202, 341274553, false);
+    let final_state = snapshot_json(0x0101, 0, Registers::default(), 0x0202, 341274553, false);
+    replay(&[0x90, 0xF4], &initial, &final_state).expect("raw reference flags replay");
+    let error = replay(&[0x90, 0xF4], &initial, &final_state.replace("514", "515")).unwrap_err();
+    assert!(error.contains("final state: flags"), "{error}");
+}
+
+#[test]
+fn replay_loads_reference_memory_at_the_recorded_entry_point() {
+    let directory = unique_temp_dir();
+    fs::create_dir_all(&directory).expect("create temporary directory");
+    let program = [0xA1, 0x00, 0x02, 0x90];
+    let mut memory = vec![0; 65536];
+    memory[0x0200..0x0202].copy_from_slice(&[0x34, 0x12]);
+    memory[0x1100..0x1104].copy_from_slice(&program);
+    fs::write(directory.join("initial-memory.bin"), memory).expect("write memory dump");
+    fs::write(directory.join("program.bin"), program).expect("write program");
+    let initial = snapshot_json(
+        0x0100,
+        0x0100,
+        Registers::default(),
+        0x0202,
+        3977269960,
+        false,
+    );
+    let final_state = snapshot_json(
+        0x0103,
+        0x0100,
+        Registers {
+            ax: 0x1234,
+            ..Registers::default()
+        },
+        0x0202,
+        3977269960,
+        false,
+    );
+    fs::write(directory.join("trace.jsonl"), initial).expect("write trace");
+    fs::write(directory.join("final.json"), final_state).expect("write final state");
+    let result = replay_dir(&directory);
+    fs::remove_dir_all(directory).expect("remove temporary directory");
+    result.expect("relocated reference memory replays");
+}
+
+#[test]
+fn replay_rejects_invalid_reference_memory_images() {
+    let directory = unique_temp_dir();
+    fs::create_dir_all(&directory).expect("create temporary directory");
+    let initial = snapshot_json(0x0100, 0, Registers::default(), 0xF002, 341274553, false);
+    fs::write(directory.join("program.bin"), [0x90, 0xF4]).expect("write program");
+    fs::write(directory.join("trace.jsonl"), &initial).expect("write trace");
+    fs::write(directory.join("final.json"), initial.replace("256", "257"))
+        .expect("write final state");
+    for size in [0, 65535, 65537] {
+        fs::write(directory.join("initial-memory.bin"), vec![0; size]).expect("write dump");
+        let error = replay_dir(&directory).unwrap_err();
+        assert!(error.contains("initial memory"), "{error}");
+    }
+    fs::write(directory.join("initial-memory.bin"), vec![0; 65536]).expect("write dump");
+    let error = replay_dir(&directory).unwrap_err();
+    assert!(error.contains("program image"), "{error}");
+    for (ip, cs) in [(0x00FF, 0), (0, 0x1000), (0xFFFF, 0)] {
+        fs::write(
+            directory.join("trace.jsonl"),
+            snapshot_json(ip, cs, Registers::default(), 0xF002, 0, false),
+        )
+        .expect("write trace");
+        let error = replay_dir(&directory).unwrap_err();
+        assert!(error.contains("checksum window"), "{error}");
+    }
+    fs::write(directory.join("program.bin"), []).expect("write empty program");
+    let error = replay_dir(&directory).unwrap_err();
+    assert!(error.contains("empty"), "{error}");
+    fs::remove_dir_all(directory).expect("remove temporary directory");
+}
+
 fn unique_temp_dir() -> PathBuf {
     let nanos = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -246,10 +323,24 @@ fn replay_dir(directory: &Path) -> Result<(), String> {
         .map_err(|error| format!("cannot read trace.jsonl: {error}"))?;
     let final_state = fs::read_to_string(directory.join("final.json"))
         .map_err(|error| format!("cannot read final.json: {error}"))?;
-    replay(&program, &trace, &final_state)
+    let initial_memory = match fs::read(directory.join("initial-memory.bin")) {
+        Ok(memory) => Some(memory),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
+        Err(error) => return Err(format!("cannot read initial-memory.bin: {error}")),
+    };
+    replay_with_memory(&program, &trace, &final_state, initial_memory.as_deref())
 }
 
 fn replay(program: &[u8], trace: &str, final_state: &str) -> Result<(), String> {
+    replay_with_memory(program, trace, final_state, None)
+}
+
+fn replay_with_memory(
+    program: &[u8],
+    trace: &str,
+    final_state: &str,
+    initial_memory: Option<&[u8]>,
+) -> Result<(), String> {
     if program.len() > CHECKSUM_END - CHECKSUM_START {
         return Err(format!(
             "program is {} bytes, but the M1 checksum window holds at most {}",
@@ -257,9 +348,6 @@ fn replay(program: &[u8], trace: &str, final_state: &str) -> Result<(), String> 
             CHECKSUM_END - CHECKSUM_START
         ));
     }
-
-    let mut cpu = Cpu::new();
-    cpu.mem.load_linear(usize::from(COM_LOAD_ADDRESS), program);
 
     let snapshots = trace
         .lines()
@@ -272,6 +360,27 @@ fn replay(program: &[u8], trace: &str, final_state: &str) -> Result<(), String> 
 
     if snapshots.iter().any(|snapshot| snapshot.halted) {
         return Err("trace rows must describe running states before instructions".into());
+    }
+
+    let mut cpu = Cpu::new();
+    if let Some(memory) = initial_memory {
+        if memory.len() != CHECKSUM_END {
+            return Err("initial memory must contain exactly 65536 bytes".into());
+        }
+        if program.is_empty() {
+            return Err("program image is empty".into());
+        }
+        let start = emu86_core::Memory::physical(first.cs, first.ip);
+        let end = start + program.len();
+        if start < CHECKSUM_START || end > CHECKSUM_END {
+            return Err("program image must lie within the checksum window".into());
+        }
+        if memory[start..end] != *program {
+            return Err("program image does not match initial memory at CS:IP".into());
+        }
+        cpu.mem.load_linear(0, memory);
+    } else {
+        cpu.mem.load_linear(usize::from(COM_LOAD_ADDRESS), program);
     }
 
     apply(&mut cpu, first);
@@ -315,7 +424,7 @@ fn apply(cpu: &mut Cpu, snapshot: &Snapshot) {
     cpu.regs.ds = snapshot.regs.ds;
     cpu.regs.es = snapshot.regs.es;
     cpu.regs.ss = snapshot.regs.ss;
-    cpu.regs.flags = Flags::from_bits(snapshot.flags);
+    cpu.regs.flags = Flags(snapshot.flags);
     cpu.halted = snapshot.halted;
 }
 

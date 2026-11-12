@@ -44,7 +44,7 @@ Editors: Zed (primary target) and VS Code.
 
 ## Status
 
-Milestone: **M1 in progress (stages 1–4 and golden-trace infrastructure done; real reference capture pending).** See `docs/ROADMAP.md` for the milestone list and `.agents/todo.md` for the live checklist.
+Milestone: **M1 in progress (stages 1–4, golden-trace infrastructure and the first real reference capture done; deferred instructions and HLT compatibility remain open).** See `docs/ROADMAP.md` for the milestone list and `.agents/todo.md` for the live checklist.
 
 ### Done and verified
 
@@ -58,7 +58,8 @@ Milestone: **M1 in progress (stages 1–4 and golden-trace infrastructure done; 
 - `Cpu::step` distinguishes `InvalidOpcode`, `DivideError` and `Unimplemented`; the prefix loop records `REP`/`REPNE` and passes it to the string handler.
 - 131 unit tests pass: register halves, flag bits, segment translation and 1 MiB wraparound, little-endian words and word accesses across segment boundaries, source-map lookup, ModR/M and effective addresses, data movement and stack semantics, every ALU form, multiply/divide edge cases, BCD adjustment and decimal conversion, shift/rotate flags, string movement and repeat conditions, every conditional jump, loop variants, calls/returns, interrupts and flag-control instructions.
 - `cargo fmt --all -- --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace` all green on Windows.
-- 6 golden-harness integration tests pass, covering schema validation, instruction sequencing, register/flag/memory divergence and synthetic replay. PowerShell importer tests also pass, including replay of an imported synthetic capture. No real emu8086 trace has been captured yet.
+- 9 golden-harness integration tests pass, covering schema validation, instruction sequencing, register/flag/memory divergence, raw reference flags, initial memory dumps and synthetic replay. PowerShell importer tests also pass, including replay of imported synthetic captures with and without initial memory.
+- The first real emu8086 4.08 capture, `tests/golden/arithmetic-overflow/`, replays 3 instructions through register loading, signed overflow and a memory write. It preserves raw flags and the captured low 64 KiB; the accepted trace stops before HLT.
 - CI matrix configured for Windows, macOS and Linux, plus a VS Code typecheck job.
 - Documentation: spec, architecture, roadmap, four ADRs.
 - Editor skeletons: VS Code grammar and manifest (valid, typechecks), Zed `extension.toml` and WASM crate skeleton (excluded from the workspace).
@@ -73,7 +74,7 @@ Milestone: **M1 in progress (stages 1–4 and golden-trace infrastructure done; 
 - `emu86_asm::assemble` returns `AssembleError::NotImplemented`.
 - `emu86-dap` and `emu86-ui` are placeholders that print a version and exit.
 - Zed extension has no tree-sitter grammar and declares no debug adapter yet.
-- No golden traces captured from emu8086.
+- HLT compatibility is unresolved: emu8086 4.08 keeps IP on HLT and exports no distinguishable halt marker; the core advances IP. The first reference capture does not cover termination or the full instruction set.
 
 ### Open questions
 
