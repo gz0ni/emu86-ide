@@ -44,7 +44,7 @@ Editors: Zed (primary target) and VS Code.
 
 ## Status
 
-Milestone: **M1 in progress (stages 1–4, golden-trace infrastructure, the first real reference capture and HLT compatibility done; deferred instructions remain open).** See `docs/ROADMAP.md` for the milestone list and `.agents/todo.md` for the live checklist.
+Milestone: **M1 in progress (deferred instructions remain open); M2 started with the COM loader.** Stages 1–4, golden-trace infrastructure, the first real reference capture and HLT compatibility are done. See `docs/ROADMAP.md` and `.agents/todo.md`.
 
 ### Done and verified
 
@@ -56,7 +56,8 @@ Milestone: **M1 in progress (stages 1–4, golden-trace infrastructure, the firs
 - Control flow: short/near/far `JMP`, direct and indirect near/far `CALL`, `RET`/`RETF` with immediates, all 16 conditional jumps, `LOOP`/`LOOPE`/`LOOPNE`/`JCXZ`.
 - Interrupts and machine control: `INT3`, `INT imm8`, `INTO`, `IRET`, `HLT`, plus `CLC`/`STC`/`CMC`, `CLD`/`STD` and `CLI`/`STI`.
 - `Cpu::step` distinguishes `InvalidOpcode`, `DivideError` and `Unimplemented`; the prefix loop records `REP`/`REPNE` and passes it to the string handler.
-- 133 core unit tests pass: register halves, flag bits, segment translation and 1 MiB wraparound, little-endian words and word accesses across segment boundaries, ModR/M and effective addresses, data movement and stack semantics, every ALU form, multiply/divide edge cases, BCD adjustment and decimal conversion, shift/rotate flags, string movement and repeat conditions, every conditional jump, loop variants, calls/returns, interrupts, flag-control instructions, HLT stopping IP and halted-step state preservation. Another 3 assembler unit tests cover source-map lookup and the assembler stub.
+- 139 core unit tests pass: register halves, flag bits, segment translation and 1 MiB wraparound, little-endian words and word accesses across segment boundaries, ModR/M and effective addresses, data movement and stack semantics, every ALU form, multiply/divide edge cases, BCD adjustment and decimal conversion, shift/rotate flags, string movement and repeat conditions, every conditional jump, loop variants, calls/returns, interrupts, flag-control instructions, HLT stopping IP and halted-step state preservation, and COM loading/execution. Another 3 assembler unit tests cover source-map lookup and the assembler stub.
+- `Cpu::from_com` loads byte slices at `0100:0100`, builds a minimal PSP at `0100:0000`, initializes shared segment registers and the stack, and rejects empty or oversized images. The 65278-byte limit reserves the initial zero return word. Six tests cover initialization, boundaries and execution through arithmetic, stack operations and termination.
 - `cargo fmt --all -- --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace` all green on Windows.
 - 10 golden-harness integration tests pass, covering schema validation, instruction sequencing, register/flag/memory divergence, raw reference flags, initial memory dumps, the reference HLT stopping state and synthetic replay. PowerShell importer tests also pass, including replay of imported synthetic captures with and without initial memory.
 - The first real emu8086 4.08 capture, `tests/golden/arithmetic-overflow/`, replays 3 instructions through register loading, signed overflow and a memory write. It preserves raw flags and the captured low 64 KiB; the accepted trace stops before HLT.
@@ -69,7 +70,7 @@ Milestone: **M1 in progress (stages 1–4, golden-trace infrastructure, the firs
 
 ### Not done
 
-- No loaders (`.com`, MZ `.exe`), no PSP, no BIOS/DOS interrupt handlers, no video, no keyboard.
+- No MZ `.exe` loader, full DOS PSP, BIOS/DOS interrupt handlers, video or keyboard. The COM loader has no file access, arguments, environment or handle setup; its initial flags use core defaults and have not been captured from emu8086.
 - Interrupts load `CS:IP` from the IVT, but no handler bodies exist yet; `INT 20h` and `INT 21h` with `AH=4Ch` halt the machine instead of vectoring.
 - `IN`/`OUT`, `WAIT` and the 8087 `ESC` opcodes still return `Unimplemented`; port I/O is blocked on the virtual-device list.
 - `emu86_asm::assemble` returns `AssembleError::NotImplemented`.

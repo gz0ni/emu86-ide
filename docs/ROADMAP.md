@@ -17,6 +17,9 @@ first golden trace from `tests/golden/`.
 
 ## M2 — execution environment
 
+Started: byte-slice COM loading, minimal PSP and initial registers/stack are
+implemented and tested. MZ loading and the remaining environment are open.
+
 - `.com` and MZ `.exe` loaders, PSP, initial segment registers,
 - text video memory and cursor,
 - `INT 21h` / `INT 10h` / `INT 16h` subset,

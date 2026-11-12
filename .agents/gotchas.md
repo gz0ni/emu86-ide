@@ -16,6 +16,13 @@ Traps and pitfalls the agent has stepped on in this project. Log a gotcha immedi
 
 <!-- New entries go here, newest first. -->
 
+### COM loader tests used the wrong flag accessor (2026-11-12)
+
+- What happened: the first loader-test build failed because `Flags::get` does not exist.
+- Root cause: the test assumed an accessor name without checking the existing API.
+- Avoid: use the existing `Flags::contains` accessor; compile the tests before treating a failure as a behavioral red test.
+- After correcting the accessor, all 6 loader tests failed as expected against the API skeleton: valid loads returned `EmptyImage`, and oversized images lacked their specific error. These are intentional TDD failures, not regressions in the existing decoder.
+
 ### HLT advances past the reference stopping address (2026-11-12)
 
 - What happened: the real-capture regression failed with `final state: ip 0x010A != 0x0109` after HLT.

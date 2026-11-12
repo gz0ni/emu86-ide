@@ -74,6 +74,28 @@ emu86-ui --attach 127.0.0.1:7000
 snapshot, diff and restore machine state without touching the instruction
 decoder.
 
+## COM loading
+
+`Cpu::from_com(image: &[u8]) -> Result<Cpu, LoadError>` constructs a fresh
+machine without filesystem access. It places a minimal PSP at `0100:0000`
+and the image at `0100:0100`. `CS`, `DS`, `ES` and `SS` are `0100h`, `IP` is
+`0100h` and `SP` is `FFFEh`. Other registers and flags use the core's defaults;
+this startup state has not been validated against an emu8086 capture.
+
+The minimal PSP contains `INT 20h` at offset `0000h`, the exclusive end of
+the 64 KiB allocation (`1100h`) at offset `0002h`, and an empty command tail
+(`00h`, `0Dh`) at offsets `0080h` and `0081h`. A zero word at `SS:FFFEh`
+allows a near `RET` to reach the PSP termination instruction.
+
+Images must contain 1–65278 bytes (`FEFEh`); larger images would overlap the
+initial stack word. Invalid images return `LoadError::EmptyImage` or
+`LoadError::ImageTooLarge(size)` before machine allocation or copying.
+The initial PSP/stack layout follows the Microsoft Press
+[COM startup description](https://www.pcjs.org/documents/books/mspl13/msdos/advdos/)
+and [PSP layout](https://www.pcjs.org/documents/books/mspl13/msdos/encyclopedia/appendix-h/).
+Arguments, environment, file handles, DOS allocation services and MZ loading
+are not implemented. The caller reads files and passes their bytes to the core.
+
 ## Versioning
 
 All crates in the workspace share one version. Editor extensions carry the

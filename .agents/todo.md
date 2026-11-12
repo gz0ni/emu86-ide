@@ -32,6 +32,7 @@ Labs 5 and 6 have been reviewed; further manuals and examples are still needed.
 - [ ] Assemble and run both lab 5 sample forms as COM programs; verify stepping, register and memory state and the reported `RHIGHT=0096h`, `RLOW=3000h` result.
 - [ ] Check assembler diagnostics and source locations for the lab 5 malformed examples: missing separator, operand size mismatch, undefined symbol and invalid mnemonic.
 - [ ] Add lab 6 acceptance cases for signed and unsigned byte and word arithmetic, overflow and division, including program-generated `00h`/`FFh` error codes in memory.
+- [ ] Capture COM startup state from emu8086 and verify initial flags and additional PSP fields before claiming loader compatibility.
 - [x] Resolve HLT compatibility: verified ordinary/prefixed stopping IP and repeated stepping in emu8086 4.08; HLT keeps IP on F4 and halted steps preserve state, with unit and real-capture regression coverage (2026-11-12).
 - [ ] Create the tree-sitter grammar repository for Zed (M5 comes before M6).
 - [x] Finish `tools/capture-trace.ps1` as a validated importer for manually recorded golden traces (2026-11-12).
@@ -42,6 +43,8 @@ Labs 5 and 6 have been reviewed; further manuals and examples are still needed.
 
 ## In Progress
 
+- [~] M2 — execution environment; MZ loading, interrupts and devices remain open.
+  - [x] M2.1 — byte-slice COM loader with a minimal PSP, initial registers, size validation and 6 execution/boundary tests; fmt, clippy, workspace tests and independent review passed (2026-11-12).
 - [~] M1 — 8086 decoder, flag semantics, per-instruction tests.
   - [x] M1.1 — decoder skeleton, ModR/M, effective addresses, segment overrides and the data movement group (2026-11-07).
   - [x] M1.2 — arithmetic and logic: add/adc/sub/sbb/cmp/inc/dec/neg/not/test/and/or/xor, mul/imul/div/idiv, BCD (2026-11-07).

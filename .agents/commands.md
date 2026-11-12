@@ -63,6 +63,10 @@ through the Zed extension registry and needs a public repository.
   shift/rotate flags and counts, string movement and repeat conditions,
   every conditional jump, loop variants, calls and returns, interrupts and
   flag-control instructions, HLT stopping addresses and halted-step state preservation.
+  COM loading tests cover the minimal PSP, initial registers, image boundaries,
+  arithmetic/memory/stack execution and termination through HLT, DOS shortcuts and RET.
+
+Run only COM loader tests: `cargo test -p emu86-core loader::tests`.
 
 ## Golden trace infrastructure
 

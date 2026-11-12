@@ -17,6 +17,13 @@ Recorded decisions and the reasoning behind them, so future work does not silent
 
 <!-- New entries go here, newest first. -->
 
+### Start M2 with a byte-slice COM constructor (2026-11-12)
+
+- Decision: `Cpu::from_com` creates a fresh machine at the specification's fixed PSP segment `0100h`, with a minimal PSP, shared segments, `IP=0100h` and `SP=FFFEh`. Accept 1–65278 bytes and reserve the initial zero stack word.
+- Reason: COM execution is required by lab 5 and can progress independently of the deferred port list and the remaining MZ scope decision. Returning fresh state avoids partially replacing an active session after a load error.
+- Alternatives considered: file loading inside the core (violates its boundary), a separate machine wrapper (duplicates `Cpu`), accepting images over the initial stack word (corrupts code or the return address), and a full DOS process environment now (not needed for this slice).
+- Consequences: no new dependencies or file I/O. PSP fields cover termination, allocation end and the empty command tail only. Other registers and flags retain deterministic core defaults; reference startup-state validation, full PSP services and MZ support remain open. Synthetic golden replay stays independent of the production loader to preserve existing reference initialization.
+
 ### HLT retains the reference stopping opcode (2026-11-12)
 
 - Decision: HLT leaves IP on its F4 opcode after consumed prefixes, and `Cpu::step` returns without mutation while halted. DOS termination shortcut IP behavior stays unchanged.

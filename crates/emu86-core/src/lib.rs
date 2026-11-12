@@ -19,12 +19,14 @@
 mod cpu;
 mod decoder;
 pub mod flags;
+mod loader;
 pub mod memory;
 mod ops;
 pub mod registers;
 
 pub use cpu::Cpu;
 pub use flags::Flags;
+pub use loader::LoadError;
 pub use memory::{Memory, MEMORY_SIZE};
 pub use registers::{Reg16, Reg8, Registers};
 
