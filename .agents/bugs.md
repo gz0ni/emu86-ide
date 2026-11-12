@@ -17,6 +17,34 @@ Known bugs found in this project and how they were fixed, so they do not reappea
 
 <!-- New entries go here, newest first. -->
 
+### Golden capture validation and checksum errors (2026-11-12) — fixed
+
+- Symptom: replay rejected whitespace before JSON colons but accepted duplicate fields and an extra halted trace row; the importer accepted invalid numeric types and failed calculating the initial checksum.
+- Root cause: substring parsing ignored structure, the trace boundary was ambiguous, numeric casts coerced invalid values, and signed PowerShell hexadecimal literals broke FNV arithmetic.
+- Fix: schema-aware parsing with JSON whitespace, strict field/type/range checks in both consumers, pre-instruction rows only, exactly one final state, unsigned FNV constants, image-size validation and no destination overwrites.
+- Prevent: malformed-capture regression cases, memory/flag divergence checks and a PowerShell-import-to-Rust-replay integration test using independently calculated checksum values. Real reference compatibility still needs a capture.
+
+### RCL/RCR ignored the incoming carry (2026-11-07) — fixed
+
+- Symptom: `RCL AL,1` with `AL=0x80`, `CF=1` produced `AL=0x00` instead of `AL=0x01`.
+- Root cause: the shift loop seeded its carry variable with `false` instead of the current `CF`, so the first rotation used a zero carry.
+- Fix: seed the loop carry from `CF`; `ROL`/`ROR`/`SHL`/`SHR`/`SAR` overwrite it before reading, so only `RCL`/`RCR` are affected.
+- Prevent: add a regression test that sets `CF` before every rotate-through-carry form, and keep the loop carry initialized from architectural state.
+
+### DAA/DAS evaluated the high-digit condition after adjustment (2026-11-07) — fixed
+
+- Symptom: `DAS` with `AL=0xA0`, `AF=1`, `CF=0` produced `AL=0x9A`, `CF=0` instead of `AL=0x3A`, `CF=1`; `DAS` with `AL=0x03`, `AF=1`, `CF=0` produced `AL=0x9D` instead of `AL=0xFD`.
+- Root cause: the high-digit condition used the adjusted `AL` and the updated `CF` instead of the original `AL` and incoming `CF` required by the Intel pseudocode (`old_AL > 99H || old_CF`), and `DAA` did not clear `CF` when the condition was false.
+- Fix: `DAA`/`DAS` now save `old_AL`, `old_CF` and `old_AF`, evaluate the high-digit condition against the saved values, `DAA` clears `CF` when it does not adjust, and `DAS` keeps the borrow from the low-digit adjustment.
+- Prevent: transcribe adjustment pseudocode literally, including its `ELSE` branches, and add regression tests for incoming `CF`/`AF`, not only the common BCD cases.
+
+### Word accesses used `offset + 1` across segment boundaries (2026-11-07) — fixed
+
+- Symptom: `Memory::read16`/`write16` at `segment:FFFF` fetched the high byte from `segment:0000` instead of the next linear byte.
+- Root cause: the code incremented the 16-bit offset and translated it again, mixing offset space with linear address space.
+- Fix: translate once, then read/write `(physical + 1) & (MEMORY_SIZE - 1)`; tests cover the 64 KiB and 1 MiB wrap points.
+- Prevent: treat offset and linear address as different spaces; test both wrap boundaries for every multi-byte access.
+
 ### `Cpu` could not derive `Debug` (2026-11-07) — fixed
 
 - Symptom: `error[E0277]: Memory doesn't implement Debug` in `crates/emu86-core/src/lib.rs`.

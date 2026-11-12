@@ -66,15 +66,17 @@ impl Memory {
     /// Reads a little-endian word.
     #[must_use]
     pub fn read16(&self, segment: u16, offset: u16) -> u16 {
-        let lo = u16::from(self.read8(segment, offset));
-        let hi = u16::from(self.read8(segment, offset.wrapping_add(1)));
+        let at = Self::physical(segment, offset);
+        let lo = u16::from(self.bytes[at]);
+        let hi = u16::from(self.bytes[(at + 1) & (MEMORY_SIZE - 1)]);
         lo | (hi << 8)
     }
 
     /// Writes a little-endian word.
     pub fn write16(&mut self, segment: u16, offset: u16, value: u16) {
-        self.write8(segment, offset, value as u8);
-        self.write8(segment, offset.wrapping_add(1), (value >> 8) as u8);
+        let at = Self::physical(segment, offset);
+        self.bytes[at] = value as u8;
+        self.bytes[(at + 1) & (MEMORY_SIZE - 1)] = (value >> 8) as u8;
     }
 
     /// Copies `data` into memory at a linear address, for loaders.
@@ -114,6 +116,22 @@ mod tests {
         assert_eq!(mem.read8(0x1000, 0x0010), 0xEF);
         assert_eq!(mem.read8(0x1000, 0x0011), 0xBE);
         assert_eq!(mem.read16(0x1000, 0x0010), 0xBEEF);
+    }
+
+    #[test]
+    fn words_cross_segment_boundaries_through_linear_addresses() {
+        let mut mem = Memory::new();
+        mem.write8(0x1000, 0xFFFF, 0xEF);
+        mem.write8(0x2000, 0x0000, 0xBE);
+        assert_eq!(mem.read16(0x1000, 0xFFFF), 0xBEEF);
+    }
+
+    #[test]
+    fn words_wrap_at_one_megabyte() {
+        let mut mem = Memory::new();
+        mem.write8(0xFFFF, 0x000F, 0xEF);
+        mem.write8(0x0000, 0x0000, 0xBE);
+        assert_eq!(mem.read16(0xFFFF, 0x000F), 0xBEEF);
     }
 
     #[test]

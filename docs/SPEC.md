@@ -3,6 +3,9 @@
 Status: draft. Sections marked **TBD** need input from the actual lab manuals
 and from emu8086 behaviour captured on a real install.
 
+Lab manuals 5 and 6 and the lab 5 sample were reviewed. They are only the
+first available assembly assignments; later manuals may add requirements.
+
 ## 1. Goal
 
 Replace emu8086 as the tool used to write, assemble, run and debug 8086
@@ -32,6 +35,11 @@ Required:
 
 **TBD:** whether the manuals use macros (`macro`/`endm`), conditional
 assembly (`if`/`else`/`endif`), `struct`, `record`.
+
+Lab 5 uses a COM-style program with `segment`/`ends`, `assume`, `org 100h`,
+`equ`, `db`, `dw`, `?`, forward-referenced variables and `end <entry>`.
+Its emulator-oriented variant omits the segment declarations. Both forms
+need compatibility checks against the assembler pipeline.
 
 ## 3. Assembler front-end
 
@@ -67,6 +75,8 @@ assembly (`if`/`else`/`endif`), `struct`, `record`.
 - [ ] Port I/O hooks for emu8086 virtual devices (**TBD:** which devices are
       actually used in the course)
 
+Labs 5 and 6 do not identify virtual devices; later labs may still use them.
+
 ## 6. Debugger
 
 Exposed over DAP so both editors get it for free:
@@ -94,3 +104,16 @@ Golden traces captured from real emu8086 under Windows/Wine:
 3. replay the same program in `emu86-core` and compare.
 
 The trace corpus lives in `tests/golden/`.
+
+Initial acceptance cases from labs 5 and 6:
+
+- Assemble and run the lab 5 COM-style sample, including its simplified
+  variant, and inspect registers, flags and memory after each instruction.
+  For the supplied values the reported final words are `RHIGHT=0096h` and
+  `RLOW=3000h`; this is a report-derived expectation, not a captured trace.
+- Verify diagnostics with source locations for a missing separator, operand
+  size mismatch, undefined symbol and invalid mnemonic.
+- Exercise signed and unsigned byte and word arithmetic, including overflow,
+  multiplication and division, with results stored in memory. Lab 6 programs
+  produce a byte error code (`00h` for success, `FFh` for an error); that code
+  is program logic, not an automatic CPU or assembler feature.

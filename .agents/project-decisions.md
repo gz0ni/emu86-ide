@@ -17,6 +17,55 @@ Recorded decisions and the reasoning behind them, so future work does not silent
 
 <!-- New entries go here, newest first. -->
 
+### M1 golden replay remains test infrastructure (2026-11-12)
+
+- Decision: replay flat images at physical `0x0100` with zero-filled memory, initialize registers and flags from the first pre-instruction snapshot, execute one instruction per row and compare one separate final state. Check memory with FNV-1a over physical `[0x0100, 0x10000)`.
+- Reason: this provides deterministic CPU regression checks before DOS loaders and device initialization exist, while keeping file parsing out of the editor-agnostic library and adding no Rust dependencies.
+- Alternatives considered: add serde to the core (forbidden dependency), fabricate reference traces from emu86 output (does not prove compatibility), automate the unavailable reference debugger (requires a separate capture workflow).
+- Consequences: `capture-trace.ps1` is a PowerShell 7 importer of manually recorded snapshots, not a debugger recorder. Strictly validate and normalize captures, never overwrite existing directories, and keep M1 open until a real emu8086 trace passes. Memory outside the checksum window, initial memory dumps and screen comparison remain unsupported.
+
+### Stage 4 control flow, interrupts and flag control (2026-11-07)
+
+- Decision: `ops/control.rs` owns short/near/far `JMP`, direct and indirect `CALL`, `RET`/`RETF`, all 16 conditional jumps, `LOOP`/`LOOPE`/`LOOPNE`/`JCXZ`, `INT3`/`INT imm8`/`INTO`/`IRET`, `HLT` and the flag-control instructions. `INT` pushes `FLAGS`, `CS` and `IP` before clearing `IF`/`TF`, then loads `CS:IP` from the IVT at segment 0. `INT 20h` and `INT 21h` with `AH=4Ch` set `halted` without pushing. Near/far indirect pointers are read before the stack is modified; register operands are invalid for the far forms.
+- Reason: matches 8086 execution order and gives the DAP a working halt path before DOS handlers exist. Pushing before clearing keeps the saved flags faithful to the interrupted program.
+- Alternatives considered: leaving `INT` unimplemented until M2 (blocks program termination tests), pushing after clearing `IF`/`TF` (wrong saved state), treating register operands as far pointers (no such 8086 encoding).
+- Consequences: `group_ff` selectors `/2`-`/5` delegate to control helpers; `INT 20h`/`INT 21h AH=4Ch` are temporary halt shortcuts that M2 must replace with real DOS handlers; `IRET` restores the full flags word including `IF`/`TF`.
+
+### Stage 3 shifts, rotates and string semantics (2026-11-07)
+
+- Decision: group 2 (`D0`-`D3`) implements `ROL`, `ROR`, `RCL`, `RCR`, `SHL`/`SAL`, `SHR`, `SAR`; selector `/6` is treated as `SAL` on the 8086, `C0`/`C1` are invalid, `CL` is used unmasked (0-255), count zero leaves all flags unchanged, rotates leave SF/ZF/PF alone, shifts leave AF alone, and OF is updated only for count 1. String instructions use DS:SI (overridable) and ES:DI (fixed), `DF` chooses the step, and `F3`/`F2` repeat while CX is non-zero, with the ZF condition applied only to `CMPS`/`SCAS`.
+- Reason: matches the documented 8086 group 2 and string behaviour; treating `/6` as `SAL` matches the original decoder, and leaving undefined flags untouched keeps golden-trace comparisons stable.
+- Alternatives considered: rejecting `/6` (would diverge from the 8086), masking `CL` to 5 bits (a 186+ behaviour), applying the ZF condition to `MOVS`/`STOS`/`LODS` (wrong).
+- Consequences: `Cpu::step` carries `Repeat` from the prefix loop into the string handler; later control-flow work can reuse the prefix plumbing, and shift helpers stay local to `ops/shift.rs`.
+
+### Stage 2 flag conventions and shared ALU helpers (2026-11-07)
+
+- Decision: `ops/alu.rs` owns `Width`, `BinaryOp`, the flag helpers and the eight binary ALU forms; `ops/arith.rs` and `ops/logic.rs` reuse them. Logic clears CF/OF/AF; `MUL`/`IMUL` set only CF/OF; `DIV`/`IDIV` leave flags unchanged; BCD sets its defined flags and leaves the undefined ones unchanged; `AAM` with base 0 returns `DivideError`, `AAD` with base 0 does not.
+- Reason: one flag implementation prevents arithmetic and logic from drifting apart, and the conventions match the documented 8086 behaviour while keeping undefined flags stable for debugger comparisons.
+- Alternatives considered: duplicate flag code per handler (drift risk), set every flag on every instruction (would contradict the "undefined" bits and break golden traces).
+- Consequences: stage 2 tests assert both defined flags and the preservation of undefined ones; later shift/rotate and string groups can reuse `Width` and `alu::read_rm`/`write_rm`.
+
+### Decoder dispatches directly from opcode bytes (2026-11-07)
+
+- Decision: `Cpu::step` matches the opcode byte and calls handlers in `ops/`; M1 has no public instruction AST.
+- Reason: state-level tests and golden traces only need execution, and an AST would be a large enum with no consumer until `disassemble` in M4.
+- Alternatives considered: decode into `Instruction` first (more isolated tests, but duplicates operand plumbing), table-driven decoder (harder to read around 8086 quirks).
+- Consequences: `decoder.rs` exposes ModR/M and operands inside the crate; M4 may add an AST and reuse `ModRm` for disassembly.
+
+### Step errors distinguish invalid opcodes, divide errors and unimplemented instructions (2026-11-07)
+
+- Decision: `StepError::{InvalidOpcode(u8), DivideError, Unimplemented}`.
+- Reason: tests and the DAP layer must tell a non-8086 opcode from an instruction that is merely not written yet, and from a division that will become `INT 0`.
+- Alternatives considered: one opaque `Unimplemented` (hides progress, makes invalid-opcode tests impossible), `String` errors (violates the error-enum rule).
+- Consequences: `Unimplemented` is temporary and must disappear when M1 closes; `DivideError` becomes `INT 0` in M2.
+
+### INT and HLT execute in M1 (2026-11-07)
+
+- Decision: M1 implements the real interrupt vector fetch and `HLT` termination, not just their decoding.
+- Reason: control-flow tests and the debugger need `INT` and `HLT` to change machine state; BIOS/DOS handlers stay in M2.
+- Alternatives considered: leave them `Unimplemented` until M2 (M1 cannot claim the full instruction set), terminate in the adapter (leaks CPU semantics out of `emu86-core`).
+- Consequences: M2 adds the interrupt handler table and termination services on top of the vector mechanism.
+
 ### Rust as the implementation language (2026-11-07)
 
 - Decision: `emu86-core`, `emu86-asm`, `emu86-dap` and `emu86-ui` are Rust; TypeScript only for the VS Code extension.

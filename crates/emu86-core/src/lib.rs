@@ -16,10 +16,14 @@
 
 #![forbid(unsafe_code)]
 
+mod cpu;
+mod decoder;
 pub mod flags;
 pub mod memory;
+mod ops;
 pub mod registers;
 
+pub use cpu::Cpu;
 pub use flags::Flags;
 pub use memory::{Memory, MEMORY_SIZE};
 pub use registers::{Reg16, Reg8, Registers};
@@ -31,13 +35,19 @@ pub const COM_LOAD_ADDRESS: u16 = 0x0100;
 /// Result of executing a single instruction.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StepError {
-    /// The decoder does not know this opcode (yet).
+    /// The opcode byte does not exist on the 8086.
+    InvalidOpcode(u8),
+    /// Division overflow or division by zero.
+    DivideError,
+    /// The instruction is valid but not implemented yet.
     Unimplemented,
 }
 
 impl core::fmt::Display for StepError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
+            Self::InvalidOpcode(opcode) => write!(f, "invalid opcode 0x{opcode:02X}"),
+            Self::DivideError => f.write_str("divide error"),
             Self::Unimplemented => f.write_str("instruction not implemented yet"),
         }
     }
@@ -45,32 +55,17 @@ impl core::fmt::Display for StepError {
 
 impl std::error::Error for StepError {}
 
-/// The emulated machine: CPU state plus memory.
-#[derive(Debug, Clone, Default)]
-pub struct Cpu {
-    /// Architectural registers.
-    pub regs: Registers,
-    /// 1 MiB of addressable memory.
-    pub mem: Memory,
-    /// Set when the program terminated (INT 20h, INT 21h AH=4Ch, or HLT).
-    pub halted: bool,
+#[cfg(test)]
+pub(crate) fn cpu_with_code(code: &[u8]) -> Cpu {
+    cpu_with_code_at(0x0100, code)
 }
 
-impl Cpu {
-    /// Creates a machine in its power-on state.
-    #[must_use]
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    /// Executes exactly one instruction and updates the machine state.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`StepError::Unimplemented`] while the decoder is still missing.
-    pub fn step(&mut self) -> Result<(), StepError> {
-        Err(StepError::Unimplemented)
-    }
+#[cfg(test)]
+pub(crate) fn cpu_with_code_at(address: usize, code: &[u8]) -> Cpu {
+    let mut cpu = Cpu::new();
+    cpu.regs.ip = address as u16;
+    cpu.mem.load_linear(address, code);
+    cpu
 }
 
 #[cfg(test)]

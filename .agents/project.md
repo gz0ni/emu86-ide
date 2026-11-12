@@ -44,13 +44,21 @@ Editors: Zed (primary target) and VS Code.
 
 ## Status
 
-Milestone: **M0 done, M1 not started.** See `docs/ROADMAP.md` for the milestone list and `.agents/todo.md` for the live checklist.
+Milestone: **M1 in progress (stages 1–4 and golden-trace infrastructure done; real reference capture pending).** See `docs/ROADMAP.md` for the milestone list and `.agents/todo.md` for the live checklist.
 
 ### Done and verified
 
 - Workspace of four crates builds offline with zero external dependencies.
-- 14 unit tests pass: register halves, flag bits, segment translation and 1 MiB wraparound, little-endian words, source-map lookup.
+- Instruction decoder foundation: ModR/M, effective addresses, segment overrides, prefix loop, and the data movement group (`MOV`, `XCHG`, `PUSH`, `POP`, `PUSHF`, `POPF`, `LAHF`, `SAHF`, `LEA`, `LDS`, `LES`, `XLAT`, `CBW`, `CWD`, `NOP`).
+- Arithmetic and logic: `ADD`, `ADC`, `SUB`, `SBB`, `CMP`, `INC`, `DEC`, `NEG`, `NOT`, `TEST`, `AND`, `OR`, `XOR`, `MUL`, `IMUL`, `DIV`, `IDIV`, `DAA`, `DAS`, `AAA`, `AAS`, `AAM`, `AAD`, including group 1/3/4/5 forms and flag semantics.
+- Shifts and rotates: `ROL`, `ROR`, `RCL`, `RCR`, `SHL`/`SAL`, `SHR`, `SAR` through `D0`-`D3`, including `CL` counts, count zero, and the 8086-only rejection of `C0`/`C1`.
+- String instructions: `MOVS`, `CMPS`, `STOS`, `LODS`, `SCAS` with byte/word forms, `DF` direction, segment override on the source, and `REP`/`REPE`/`REPNE`.
+- Control flow: short/near/far `JMP`, direct and indirect near/far `CALL`, `RET`/`RETF` with immediates, all 16 conditional jumps, `LOOP`/`LOOPE`/`LOOPNE`/`JCXZ`.
+- Interrupts and machine control: `INT3`, `INT imm8`, `INTO`, `IRET`, `HLT`, plus `CLC`/`STC`/`CMC`, `CLD`/`STD` and `CLI`/`STI`.
+- `Cpu::step` distinguishes `InvalidOpcode`, `DivideError` and `Unimplemented`; the prefix loop records `REP`/`REPNE` and passes it to the string handler.
+- 131 unit tests pass: register halves, flag bits, segment translation and 1 MiB wraparound, little-endian words and word accesses across segment boundaries, source-map lookup, ModR/M and effective addresses, data movement and stack semantics, every ALU form, multiply/divide edge cases, BCD adjustment and decimal conversion, shift/rotate flags, string movement and repeat conditions, every conditional jump, loop variants, calls/returns, interrupts and flag-control instructions.
 - `cargo fmt --all -- --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace` all green on Windows.
+- 6 golden-harness integration tests pass, covering schema validation, instruction sequencing, register/flag/memory divergence and synthetic replay. PowerShell importer tests also pass, including replay of an imported synthetic capture. No real emu8086 trace has been captured yet.
 - CI matrix configured for Windows, macOS and Linux, plus a VS Code typecheck job.
 - Documentation: spec, architecture, roadmap, four ADRs.
 - Editor skeletons: VS Code grammar and manifest (valid, typechecks), Zed `extension.toml` and WASM crate skeleton (excluded from the workspace).
@@ -59,8 +67,9 @@ Milestone: **M0 done, M1 not started.** See `docs/ROADMAP.md` for the milestone 
 
 ### Not done
 
-- No instruction decoder: `Cpu::step` returns `StepError::Unimplemented`.
-- No loaders (`.com`, MZ `.exe`), no PSP, no interrupts, no video, no keyboard.
+- No loaders (`.com`, MZ `.exe`), no PSP, no BIOS/DOS interrupt handlers, no video, no keyboard.
+- Interrupts load `CS:IP` from the IVT, but no handler bodies exist yet; `INT 20h` and `INT 21h` with `AH=4Ch` halt the machine instead of vectoring.
+- `IN`/`OUT`, `WAIT` and the 8087 `ESC` opcodes still return `Unimplemented`; port I/O is blocked on the virtual-device list.
 - `emu86_asm::assemble` returns `AssembleError::NotImplemented`.
 - `emu86-dap` and `emu86-ui` are placeholders that print a version and exit.
 - Zed extension has no tree-sitter grammar and declares no debug adapter yet.

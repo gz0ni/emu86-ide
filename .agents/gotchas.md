@@ -16,6 +16,54 @@ Traps and pitfalls the agent has stepped on in this project. Log a gotcha immedi
 
 <!-- New entries go here, newest first. -->
 
+### Python defaults produced non-UTF-8 punctuation (2026-11-12)
+
+- What happened: review found replacement glyphs for two em dashes in `tools/README.md`.
+- Root cause: shell Python wrote its Windows default encoding instead of UTF-8.
+- Avoid: always pass `encoding='utf-8'` and `newline='\n'` when writing repository text from Python; verify decoded output after writing.
+
+### Shell writes to agent context are protected (2026-11-12)
+
+- What happened: Python raised `PermissionError` while updating `.agents/todo.md` from the shell.
+- Root cause: this environment exposes agent context as read-only to shell processes.
+- Avoid: use the structured patch tool for authorized repository context updates; it supports these edits without shell escalation.
+
+### Git index writes require elevated sandbox access (2026-11-12)
+
+- What happened: authorized `git add` failed creating `.git/index.lock` with `Permission denied`.
+- Root cause: the sandbox exposes `.git` as read-only to ordinary shell commands.
+- Avoid: use the approval-reviewed elevated execution path for user-authorized staging, commits and pushes; do not change repository permissions.
+
+### Untracked files are absent from ordinary diff checks (2026-11-12)
+
+- What happened: `git diff --cached --check` found an extra blank line at the end of the new PowerShell test after ordinary `git diff --check` had passed.
+- Root cause: ordinary diffs do not include untracked files.
+- Avoid: inspect the staged diff with `git diff --cached --check` before committing newly added files.
+
+### Capture importer coerced invalid JSON numbers and used a signed FNV literal (2026-11-12)
+
+- What happened: importer regression tests accepted strings, nulls, booleans and fractional registers; the valid import failed converting `0x811C9DC5` to `UInt32`.
+- Root cause: casts were used as validation, and PowerShell interprets `0x811C9DC5` and `0xFFFFFFFF` as negative `Int32` values. The signed mask also caused overflow on the next checksum attempt. Duplicate fields, unsafe names and repeated final states were not checked either.
+- Avoid: validate JSON token kinds and ranges before conversion, use decimal `2166136261` for the FNV offset and `4294967295` for its mask, and validate all inputs before creating the destination.
+
+### Golden harness validation gaps exposed by regression tests (2026-11-12)
+
+- What happened: new harness tests failed on whitespace, duplicate JSON keys and an extra halted trace row. Review exposed a second failing case: Unicode whitespace after an object was accepted. Cargo also warned that incremental-cache hard links fell back to copies.
+- Root cause: substring field lookup did not parse JSON structure, replay accepted a post-instruction halt state as an extra pre-instruction row, and `str::trim` accepts more than JSON whitespace. The cache warning is an environment limitation, not a test failure.
+- Avoid: parse the snapshot schema, reject halted trace rows and test malformed captures before accepting reference data. Judge cache warnings separately from test exit codes.
+
+### INT stack layout and the default SP trip up test expectations (2026-11-07)
+
+- What happened: two control-flow tests failed because they expected the interrupted `IP` at `SS:FFFE` and `SP=0x0FFA`.
+- Root cause: `INT` pushes `FLAGS`, then `CS`, then `IP`, so with the default `SP=0` the saved `IP` lands at `SS:FFFA` and `SP` ends at `FFFA`; a test that started from `SP=0x1000` correctly ended at `0x0FFA`.
+- Avoid: when asserting interrupt stack contents, remember the push order (`FLAGS` highest address, `IP` lowest) and compute `SP` from the starting value with wrapping, not by copying the `SP=0x1000` case.
+
+### 8086 shift immediates and REP are not 186+ forms (2026-11-07)
+
+- What happened: `C0`/`C1` look like natural shift-immediate opcodes, and `REP` used to be consumed and discarded by the prefix loop.
+- Root cause: 8086 group 2 only has `D0`-`D3`; immediate-count shifts arrived with the 186. String repeat needs the prefix state, not just consumption.
+- Avoid: keep `C0`/`C1` in `is_invalid_opcode`; pass `Repeat` through `ops::execute` to `ops::string`, and apply the ZF stop condition only to `CMPS`/`SCAS`.
+
 ### `Memory` breaks `#[derive(Debug)]` on `Cpu` (2026-11-07)
 
 - `cargo build` failed with `Memory doesn't implement Debug` while `Cpu` derived `Debug`.
