@@ -170,7 +170,7 @@ fn replay_checks_halt_sequence_and_reports_instruction_errors() {
     let state = |ip, halted| snapshot_json(ip, 0, Registers::default(), 0xF002, hash, halted);
     let initial = state(0x0100, false);
     let before_halt = state(0x0101, false);
-    let final_state = state(0x0102, true);
+    let final_state = state(0x0101, true);
     assert!(replay(
         &[0x90, 0xF4],
         &format!("{initial}\n{before_halt}"),
@@ -208,7 +208,7 @@ fn replay_detects_memory_and_flag_divergence_at_the_correct_step() {
     let initial = snapshot_json(0x0100, 0, regs, 0xF002, 2650794588, false);
     let before_store = snapshot_json(0x0102, 0, loaded, 0xF002, 2650794588, false);
     let before_halt = snapshot_json(0x0105, 0, loaded, 0xF002, 2899505699, false);
-    let final_state = snapshot_json(0x0106, 0, loaded, 0xF002, 2899505699, true);
+    let final_state = snapshot_json(0x0105, 0, loaded, 0xF002, 2899505699, true);
     let trace = format!("{initial}\n{before_store}\n{before_halt}");
     replay(&program, &trace, &final_state).expect("memory-writing trace replays");
 
@@ -224,6 +224,20 @@ fn replay_detects_memory_and_flag_divergence_at_the_correct_step() {
     );
     let error = replay(&program, &trace, &final_state.replace("61442", "61443")).unwrap_err();
     assert!(error.contains("final state: flags"), "{error}");
+}
+
+#[test]
+fn hlt_preserves_the_reference_instruction_pointer() {
+    let directory =
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../tests/golden/arithmetic-overflow");
+    let program = fs::read(directory.join("program.bin")).unwrap();
+    let memory = fs::read(directory.join("initial-memory.bin")).unwrap();
+    let mut trace = fs::read_to_string(directory.join("trace.jsonl")).unwrap();
+    let before_hlt = fs::read_to_string(directory.join("final.json")).unwrap();
+    trace.push_str(&before_hlt);
+    let after_hlt = before_hlt.replace("\"halted\":false", "\"halted\":true");
+    replay_with_memory(&program, &trace, &after_hlt, Some(&memory))
+        .expect("reference HLT keeps IP on the stopping opcode");
 }
 
 #[test]

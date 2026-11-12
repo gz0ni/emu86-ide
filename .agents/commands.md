@@ -62,7 +62,7 @@ through the Zed extension registry and needs a public repository.
   multiply/divide edge cases, BCD adjustment and decimal conversion,
   shift/rotate flags and counts, string movement and repeat conditions,
   every conditional jump, loop variants, calls and returns, interrupts and
-  flag-control instructions.
+  flag-control instructions, HLT stopping addresses and halted-step state preservation.
 
 ## Golden trace infrastructure
 

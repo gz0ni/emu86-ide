@@ -51,7 +51,9 @@ All unlisted registers retain their initial values; all accepted snapshots have 
 
 The second instruction sets OF, SF, AF and PF; CF and ZF remain clear, and IF remains set. The checksum window remains physical `[0x0100, 0x10000)`.
 
-An additional exploratory HLT step showed the message “the emulator is halted” while IP stayed at `0109h`; its saved state was identical to export 3. That export has no distinguishable halt marker. HLT is outside this bounded capture and needs a separate compatibility investigation; no final state was fabricated for it.
+An additional exploratory HLT step showed the message “the emulator is halted” while IP stayed at `0109h`; its saved state was identical to export 3. That export has no distinguishable halt marker. HLT is outside this bounded capture and was recorded for a separate compatibility investigation; no final state was fabricated for it.
+
+The follow-up investigation and halt regression are documented in [HLT reference observations](../hlt-observations.md). The bounded data files above remain unchanged.
 
 ## Integrity
 

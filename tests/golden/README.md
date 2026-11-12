@@ -2,6 +2,8 @@
 
 Reference captures from a real emu8086 install. `arithmetic-overflow/` records 3 instructions from emu8086 4.08: register loading, signed overflow and a memory write. Synthetic tests verify the replay infrastructure. This first capture does not establish compatibility for the full instruction set or close M1.
 
+The HLT regression extends the recorded arithmetic states through the reference's observed halt. [HLT reference observations](hlt-observations.md) document its manual halt marker, stopping address, prefixed probe and repeated-step behavior.
+
 ## Layout
 
 One directory per program:

@@ -16,6 +16,14 @@ Traps and pitfalls the agent has stepped on in this project. Log a gotcha immedi
 
 <!-- New entries go here, newest first. -->
 
+### HLT advances past the reference stopping address (2026-11-12)
+
+- What happened: the real-capture regression failed with `final state: ip 0x010A != 0x0109` after HLT.
+- Root cause: instruction fetch increments IP before the halt handler, while emu8086 4.08 displays and exports the stopping opcode's address.
+- Avoid: verify the stopping address, prefixed instructions and repeated stepping against the reference before updating halt behavior.
+- Additional regression tests failed on ordinary stopping IP and on `Cpu::step` executing a new MOV while `halted` was already set; the step entry point needs an early halt check as well as the HLT address fix.
+- After the fix, two synthetic replay tests still expected IP after HLT and failed. Update those hand-derived halt expectations to the observed stopping opcode address. The PowerShell synthetic capture ends after NOP and needs no change.
+
 ### Real reference initialization exposed replay assumptions (2026-11-12)
 
 - What happened: new replay tests failed because raw `0202` flags became `F202`, relocated dump memory was ignored and invalid dump sizes were accepted.

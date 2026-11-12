@@ -17,12 +17,12 @@ Known bugs found in this project and how they were fixed, so they do not reappea
 
 <!-- New entries go here, newest first. -->
 
-### HLT reference IP and halt-state observability (2026-11-12) — open
+### HLT reference IP and halt-state observability (2026-11-12) — fixed
 
 - Symptom: an exploratory HLT step in emu8086 4.08 reports a halted emulator but keeps IP at `0109h`; the complete saved state is identical to the preceding running state. The core advances IP after fetching HLT.
-- Root cause: reference halt handling and its debugger/export representation need separate investigation.
-- Fix: none yet. The first accepted golden capture is explicitly bounded before HLT, with 3 executed instructions and a running final state.
-- Prevent: capture halt behavior through both the debugger and a state export before choosing compatibility semantics; do not invent a halted export or mask IP differences.
+- Root cause: fetch advanced IP before the HLT handler, and `Cpu::step` did not check an existing halt state. The reference debugger's halt marker is not serialized in its exported register/memory state.
+- Fix: HLT restores IP to its opcode using wrapping subtraction; halted steps return without mutation. Ordinary/prefixed reference probes and byte-identical repeated-step exports confirm the behavior. The first accepted capture remains bounded before HLT; an integration regression extends its recorded states using the explicit debugger halt observation.
+- Prevent: regression tests for reference stopping IP, prefixed HLT, IP wraparound and a halted step with a replacement MOV at the stopping address. Keep raw export values and the manually observed halt marker distinct.
 
 ### Replay discarded reference initialization (2026-11-12) — fixed
 

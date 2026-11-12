@@ -44,7 +44,7 @@ Editors: Zed (primary target) and VS Code.
 
 ## Status
 
-Milestone: **M1 in progress (stages 1–4, golden-trace infrastructure and the first real reference capture done; deferred instructions and HLT compatibility remain open).** See `docs/ROADMAP.md` for the milestone list and `.agents/todo.md` for the live checklist.
+Milestone: **M1 in progress (stages 1–4, golden-trace infrastructure, the first real reference capture and HLT compatibility done; deferred instructions remain open).** See `docs/ROADMAP.md` for the milestone list and `.agents/todo.md` for the live checklist.
 
 ### Done and verified
 
@@ -56,10 +56,11 @@ Milestone: **M1 in progress (stages 1–4, golden-trace infrastructure and the f
 - Control flow: short/near/far `JMP`, direct and indirect near/far `CALL`, `RET`/`RETF` with immediates, all 16 conditional jumps, `LOOP`/`LOOPE`/`LOOPNE`/`JCXZ`.
 - Interrupts and machine control: `INT3`, `INT imm8`, `INTO`, `IRET`, `HLT`, plus `CLC`/`STC`/`CMC`, `CLD`/`STD` and `CLI`/`STI`.
 - `Cpu::step` distinguishes `InvalidOpcode`, `DivideError` and `Unimplemented`; the prefix loop records `REP`/`REPNE` and passes it to the string handler.
-- 131 unit tests pass: register halves, flag bits, segment translation and 1 MiB wraparound, little-endian words and word accesses across segment boundaries, source-map lookup, ModR/M and effective addresses, data movement and stack semantics, every ALU form, multiply/divide edge cases, BCD adjustment and decimal conversion, shift/rotate flags, string movement and repeat conditions, every conditional jump, loop variants, calls/returns, interrupts and flag-control instructions.
+- 133 core unit tests pass: register halves, flag bits, segment translation and 1 MiB wraparound, little-endian words and word accesses across segment boundaries, ModR/M and effective addresses, data movement and stack semantics, every ALU form, multiply/divide edge cases, BCD adjustment and decimal conversion, shift/rotate flags, string movement and repeat conditions, every conditional jump, loop variants, calls/returns, interrupts, flag-control instructions, HLT stopping IP and halted-step state preservation. Another 3 assembler unit tests cover source-map lookup and the assembler stub.
 - `cargo fmt --all -- --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace` all green on Windows.
-- 9 golden-harness integration tests pass, covering schema validation, instruction sequencing, register/flag/memory divergence, raw reference flags, initial memory dumps and synthetic replay. PowerShell importer tests also pass, including replay of imported synthetic captures with and without initial memory.
+- 10 golden-harness integration tests pass, covering schema validation, instruction sequencing, register/flag/memory divergence, raw reference flags, initial memory dumps, the reference HLT stopping state and synthetic replay. PowerShell importer tests also pass, including replay of imported synthetic captures with and without initial memory.
 - The first real emu8086 4.08 capture, `tests/golden/arithmetic-overflow/`, replays 3 instructions through register loading, signed overflow and a memory write. It preserves raw flags and the captured low 64 KiB; the accepted trace stops before HLT.
+- HLT compatibility is verified against ordinary and prefixed reference probes: IP stays on the F4 opcode, and stepping a halted core does not mutate registers, flags or memory. The debugger supplies the observed halt marker; the reference export itself has none.
 - CI matrix configured for Windows, macOS and Linux, plus a VS Code typecheck job.
 - Documentation: spec, architecture, roadmap, four ADRs.
 - Editor skeletons: VS Code grammar and manifest (valid, typechecks), Zed `extension.toml` and WASM crate skeleton (excluded from the workspace).
@@ -74,7 +75,7 @@ Milestone: **M1 in progress (stages 1–4, golden-trace infrastructure and the f
 - `emu86_asm::assemble` returns `AssembleError::NotImplemented`.
 - `emu86-dap` and `emu86-ui` are placeholders that print a version and exit.
 - Zed extension has no tree-sitter grammar and declares no debug adapter yet.
-- HLT compatibility is unresolved: emu8086 4.08 keeps IP on HLT and exports no distinguishable halt marker; the core advances IP. The first reference capture does not cover termination or the full instruction set.
+- The reference capture and HLT follow-up do not establish compatibility for the full instruction set. Hardware interrupt wake-up and timing remain outside the current core.
 
 ### Open questions
 

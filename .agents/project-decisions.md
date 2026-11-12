@@ -17,6 +17,13 @@ Recorded decisions and the reasoning behind them, so future work does not silent
 
 <!-- New entries go here, newest first. -->
 
+### HLT retains the reference stopping opcode (2026-11-12)
+
+- Decision: HLT leaves IP on its F4 opcode after consumed prefixes, and `Cpu::step` returns without mutation while halted. DOS termination shortcut IP behavior stays unchanged.
+- Reason: emu8086 4.08 displays and exports the HLT opcode address, including after an ES prefix, and another step does not execute the following MOV. Matching this observed behavior is the project's compatibility rule.
+- Alternatives considered: retain hardware-style next-IP behavior (does not match the reference), move only the debugger display (exported raw IP also stays on HLT), or infer a halt bit from the export (none is serialized).
+- Consequences: core and golden regression tests cover halt IP and state preservation. The reference debugger message supplies the manual halt marker. Hardware interrupt wake-up remains future work; full proprietary state files remain excluded.
+
 ### Preserve real reference memory and flags (2026-11-12)
 
 - Decision: allow an optional 65536-byte `initial-memory.bin`, validate the exact program at the first physical CS:IP within the existing checksum window, and initialize replay flags from the raw recorded word without normalization.

@@ -42,6 +42,10 @@ impl Cpu {
     /// represented, and [`StepError::Unimplemented`] for instructions the
     /// decoder does not handle yet.
     pub fn step(&mut self) -> Result<(), StepError> {
+        if self.halted {
+            return Ok(());
+        }
+
         let mut segment_override = None;
         let mut repeat = None;
 

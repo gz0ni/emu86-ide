@@ -203,6 +203,7 @@ pub(super) fn iret(cpu: &mut Cpu) -> Result<(), StepError> {
 }
 
 pub(super) fn hlt(cpu: &mut Cpu) -> Result<(), StepError> {
+    cpu.regs.ip = cpu.regs.ip.wrapping_sub(1);
     cpu.halted = true;
     Ok(())
 }
@@ -535,6 +536,48 @@ mod tests {
         assert_eq!(cpu.regs.ip, 0x0000);
         assert_eq!(cpu.regs.cs, 0x0000);
         assert_eq!(cpu.regs.sp, 0xFFFA);
+    }
+
+    #[test]
+    fn hlt_stops_on_the_opcode_even_with_a_prefix_or_ip_wraparound() {
+        for (start, code, expected) in [
+            (0x0100, &[0xF4][..], 0x0100),
+            (0x0100, &[0x26, 0xF4][..], 0x0101),
+            (0xFFFF, &[0xF4][..], 0xFFFF),
+            (0xFFFF, &[0x26, 0xF4][..], 0x0000),
+        ] {
+            let mut cpu = Cpu::new();
+            cpu.regs.ip = start;
+            cpu.regs.flags = Flags(0x0202);
+            for (index, &byte) in code.iter().enumerate() {
+                cpu.mem.write8(0, start.wrapping_add(index as u16), byte);
+            }
+            let memory = cpu.mem.as_slice().to_vec();
+            cpu.step().unwrap();
+            assert!(cpu.halted);
+            assert_eq!(cpu.regs.ip, expected);
+            assert_eq!(cpu.regs.flags.bits(), 0x0202);
+            assert_eq!(cpu.mem.as_slice(), memory);
+        }
+    }
+
+    #[test]
+    fn stepping_a_halted_cpu_preserves_its_state() {
+        let mut cpu = cpu_with_code(&[0xF4, 0xB8, 0x34, 0x12]);
+        cpu.step().unwrap();
+        cpu.mem.write8(cpu.regs.cs, cpu.regs.ip, 0xB8);
+        cpu.mem
+            .write8(cpu.regs.cs, cpu.regs.ip.wrapping_add(1), 0x78);
+        cpu.mem
+            .write8(cpu.regs.cs, cpu.regs.ip.wrapping_add(2), 0x56);
+        let registers = cpu.regs;
+        let memory = cpu.mem.as_slice().to_vec();
+        for _ in 0..2 {
+            cpu.step().unwrap();
+            assert!(cpu.halted);
+            assert_eq!(cpu.regs, registers);
+            assert_eq!(cpu.mem.as_slice(), memory);
+        }
     }
 
     #[test]
